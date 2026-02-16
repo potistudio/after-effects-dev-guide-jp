@@ -1,0 +1,14 @@
+# macOS dummy files
+.DS_Store
+
+# Build artifacts
+dist/
+
+# Generated types
+.astro/
+
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env

@@ -1,0 +1,27 @@
+---
+import DefaultHead from '@astrojs/starlight/components/Head.astro';
+---
+
+<DefaultHead />
+
+<script>
+	import { applyBudouxLineBreaks } from '../scripts/budoux-linebreak';
+
+	const runBudoux = () => {
+		void applyBudouxLineBreaks();
+	};
+
+	if (document.documentElement.dataset.budouxListenerAttached !== 'true') {
+		document.documentElement.dataset.budouxListenerAttached = 'true';
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', runBudoux, { once: true });
+		} else {
+			runBudoux();
+		}
+
+		document.addEventListener('astro:page-load', runBudoux);
+	} else {
+		runBudoux();
+	}
+</script>

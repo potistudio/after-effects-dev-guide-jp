@@ -4,6 +4,7 @@ const ROOT_SELECTOR = '.sl-markdown-content';
 const TARGET_SELECTOR = 'p, li, dt, dd, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
 const SKIP_ANCESTOR_SELECTOR = 'code, pre, kbd, samp, script, style, textarea, svg, math';
 const HAS_JAPANESE_RE = /[\u3040-\u30FF\u3400-\u9FFF]/;
+const PROCESS_BATCH_SIZE = 20;
 
 interface BudouxParser {
 	parse(text: string): string[];
@@ -39,21 +40,26 @@ function splitTextNodeWithBudoux(node: Text, parser: BudouxParser) {
 
 	const fragment = document.createDocumentFragment();
 	for (let i = 0; i < chunks.length; i += 1) {
-		const segment = document.createElement('span');
-		segment.className = 'budoux-segment';
-		segment.style.wordBreak = 'keep-all';
-		segment.style.overflowWrap = 'break-word';
-		segment.textContent = chunks[i];
-		fragment.append(segment);
+		fragment.append(document.createTextNode(chunks[i]));
 		if (i < chunks.length - 1) fragment.append(document.createElement('wbr'));
 	}
 
 	node.parentNode?.replaceChild(fragment, node);
 }
 
+function hasJapaneseText(element: HTMLElement): boolean {
+	return HAS_JAPANESE_RE.test(element.textContent ?? '');
+}
+
 function applyBudouxToElement(element: Element, parser: BudouxParser) {
 	if (!(element instanceof HTMLElement)) return;
 	if (element.dataset.budouxApplied === 'true') return;
+	if (!hasJapaneseText(element)) {
+		element.dataset.budouxApplied = 'true';
+		return;
+	}
+
+	element.classList.add('budoux-target');
 
 	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
 	const nodes: Text[] = [];
@@ -66,6 +72,21 @@ function applyBudouxToElement(element: Element, parser: BudouxParser) {
 
 	for (const node of nodes) splitTextNodeWithBudoux(node, parser);
 	element.dataset.budouxApplied = 'true';
+}
+
+function waitNextFrame(): Promise<void> {
+	return new Promise((resolve) => {
+		window.requestAnimationFrame(() => resolve());
+	});
+}
+
+async function applyBudouxToTargets(targets: HTMLElement[], parser: BudouxParser) {
+	let processed = 0;
+	for (const target of targets) {
+		applyBudouxToElement(target, parser);
+		processed += 1;
+		if (processed % PROCESS_BATCH_SIZE === 0) await waitNextFrame();
+	}
 }
 
 async function getJapaneseParser(): Promise<BudouxParser | null> {
@@ -89,7 +110,7 @@ export async function applyBudouxLineBreaks() {
 
 	const roots = document.querySelectorAll(ROOT_SELECTOR);
 	for (const root of roots) {
-		const targets = root.querySelectorAll(TARGET_SELECTOR);
-		for (const target of targets) applyBudouxToElement(target, parser);
+		const targets = Array.from(root.querySelectorAll<HTMLElement>(TARGET_SELECTOR));
+		await applyBudouxToTargets(targets, parser);
 	}
 }

@@ -11,9 +11,9 @@ AEGP は、スイートを要求し、スイートが存在しない場合には
 
 ## After Effects との AEGP 通信
 
-エフェクトプラグインの場合、After Effects とのすべての通信は単一のエントリ ポイント関数を通じて行われます。 AEGP の場合はそうではありません。
+エフェクトプラグインの場合、After Effects とのすべての通信は単一のエントリポイント関数を通じて行われます。 AEGP の場合はそうではありません。
 
-After Effects は AEGP の PiPL で指定されたエントリ ポイント関数を呼び出します（これは引き続き必要です）が、After Effects と AEGP の間の後続のすべての通信は AEGP に登録されているフック関数によって処理されます。
+After Effects は AEGP の PiPL で指定されたエントリポイント関数を呼び出します（これは引き続き必要です）が、After Effects と AEGP の間の後続のすべての通信は AEGP に登録されているフック関数によって処理されます。
 
 この登録は、[Register Suite](aegp-suites#aegp_registersuite5) を使用して、プラグインのエントリ関数内から実行する必要があります。
 

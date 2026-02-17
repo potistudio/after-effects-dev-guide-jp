@@ -3,15 +3,19 @@ title: 'はじめに'
 ---
 Adobe® After Effects® ソフトウェア開発キットへようこそ。
 
-このドキュメントは継続的に更新されています。最新の公開版 SDK は [Adobe Developer Console](https://www.adobe.io/after-effects/) から入手できます。
+本ドキュメントは、継続的に更新および編集される生きたドキュメントです。SDKの最新公開バージョンは、以下のURLから入手可能です。
+[Adobe Developer Console](https://www.adobe.io/after-effects/)
 
-不明点がある場合は、まず [After Effects SDK Forum](https://community.adobe.com/t5/after-effects/bd-p/after-effects?page=1&sort=latest_replies&filter=all&topics=label-sdk) を確認してください。既存の回答で解決しない場合は、新しい質問を投稿してください。
+詳細情報が必要な場合は、After Effects SDKフォーラムにてご質問がすでに解決されている可能性がございます。
+[After Effects SDK Forum](https://community.adobe.com/t5/after-effects/bd-p/after-effects?page=1&sort=latest_replies&filter=all&topics=label-sdk)
+
+そちらの検索ボックスをご利用いただき、未解決のご質問がある場合は、新規にご投稿ください。
 
 ---
 
 ## このドキュメントについて
 
-このガイドは、長年にわたって拡張と改訂を重ねてきた「リファレンス」と「実装ガイド」を兼ねたドキュメントです。
+このドキュメントは、長年にわたって拡張と改訂を重ねてきた「リファレンス」と「実装ガイド」を兼ねたドキュメントです。
 
 After Effects API の仕様を網羅しつつ、実装時に迷いやすい点を実践的に説明する構成になっています。今後も、必要に応じて図解や補足説明を追加していきます。
 

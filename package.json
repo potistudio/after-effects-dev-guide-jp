@@ -11,7 +11,8 @@
 		"sync:docs": "node scripts/sync-ref-docs.mjs",
 		"sync:docs:force": "node scripts/sync-ref-docs.mjs --force",
 		"translate:docs": "python3 scripts/translate-remaining-docs.py",
-		"normalize:grid-tables": "node scripts/normalize-grid-tables.mjs"
+		"normalize:grid-tables": "node scripts/normalize-grid-tables.mjs",
+		"normalize:jp-style": "node scripts/normalize-jp-style.mjs"
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^12.6.12",

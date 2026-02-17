@@ -1,7 +1,7 @@
 ---
 title: '呼び出しシーケンス'
 ---
-すべての AEGP と同様に、プラグインの PiPL でエクスポートされたエントリ ポイント関数が起動時に呼び出されます。この関数の間、AEIO は必要な関数への関数ポインタを提供し、その機能を記述してから、適切な構造体を [AEGP_RegisterIO()](../aegps/aegp-suites#aegp_registersuite5) に渡す必要があります。
+すべての AEGP と同様に、プラグインの PiPL でエクスポートされたエントリポイント関数が起動時に呼び出されます。この関数の間、AEIO は必要な関数への関数ポインタを提供し、その機能を記述してから、適切な構造体を [AEGP_RegisterIO()](../aegps/aegp-suites#aegp_registersuite5) に渡す必要があります。
 
 ---
 

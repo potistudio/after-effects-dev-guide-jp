@@ -5,7 +5,9 @@ title: 'Apple Silicon対応'
 
 すべての Adob​​e 製品にネイティブ Apple Silicon バージョンがまだあるわけではありませんが、ネイティブ Apple Silicon バージョンがある製品では、Apple Silicon 実装を備えたエフェクトプラグインのみが利用可能になります。これらの新しい M1 マシンの急速な普及を見越して、Apple Silicon ターゲットをすぐに追加することをお勧めします。
 
-:::note
+:::no
+t
+e
 Mac Universal バイナリをビルドするには、Xcode 12.2 以降が必要です。
 
 :::
@@ -22,17 +24,17 @@ Mac Universal バイナリをビルドするには、Xcode 12.2 以降が必要�
     ![Mac Universal Build](../_static/mac_universal_build.png "Mac Universal Build")
     *Mac ユニバーサル ビルド*
 
-2. After Effects に Apple Silicon ビルドの主なエントリ ポイントを伝えます。
+2. After Effects に Apple Silicon ビルドの主なエントリポイントを伝えます。
 
     > * プラグインの .r リソース ファイルを見つけます。
-    > * 既存の Intel Mac エントリ ポイント定義の横に `CodeMacARM64 {"EffectMain"}` を追加します。
+    > * 既存の Intel Mac エントリポイント定義の横に `CodeMacARM64 {"EffectMain"}` を追加します。
     >「cpp」
     > #定義されている場合(AE_OS_MAC)
     > CodeMacARM64 {"EffectMain"},
     > CodeMacIntel64 {"EffectMain"},
     > #endif
     >「」
-    > * 何らかの理由で、x64 と ARM で異なるエントリ ポイントが必要な場合は、異なるエントリ ポイント名と文字列を指定するだけです。
+    > * 何らかの理由で、x64 と ARM で異なるエントリポイントが必要な場合は、異なるエントリポイント名と文字列を指定するだけです。
 
 3. Any Mac (Apple Silicon、Intel) ターゲット用にビルドするか、[製品] -> [アーカイブ] を使用して、ユニバーサル バイナリをコンパイルします。
 
@@ -46,7 +48,7 @@ Apple Silicon で例外を使用する場合は、特に注意する必要があ
 
 Apple Silicon では、未定義の動作ではなく ABI が変更されているため、これが発生すると terminate() が呼び出されます。
 
-プラグインのメイン エントリ ポイントは常に extern "C" 呼び出し規約であるため、プログラムの終了を防ぐために、このコードを try/catch ブロックでラップする必要があります。例えば：
+プラグインのメイン エントリポイントは常に extern "C" 呼び出し規約であるため、プログラムの終了を防ぐために、このコードを try/catch ブロックでラップする必要があります。例えば：
 
 ```cpp
 PF_Err EffectMain ( PF_Cmd cmd,

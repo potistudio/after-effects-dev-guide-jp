@@ -1,116 +1,92 @@
 ---
 title: 'PF_InData'
 ---
-After Effects は、`PF_InData` を使用してシステム、プロジェクト、レイヤー、オーディオ情報を通信します。この構造は、各コマンドセレクターがプラグインに送信される前に更新されます。
+After Effects は `PF_InData` を通じて、システム状態、プロジェクト情報、レイヤー情報、オーディオ情報をエフェクトへ渡します。  
+この構造体はコマンドセレクターごとに更新されます。
 
-特定の [PF_Cmds](command-selectors) 中にのみ有効なフィールドが記載されています。
-
-また、心配しないでください。 `PF_InData` は気が遠くなるほど大きいですが、各メンバーの目的を覚える必要はありません。場合によっては、いくつかのフィールドを使用することになります。
+フィールドによって有効なセレクターが異なるため、必要なタイミングでのみ参照してください。
 
 ---
 
 ## PF_InData メンバー
 
-| Name | Description |
+| フィールド | 説明 |
 | --- | --- |
-| `inter` | Callbacks used for user interaction, adding parameters, checking whether the user has interrupted the effect, displaying a progress bar, and obtaining source frames and parameter values at times other than the current time being rendered.<br /><br />This very useful function suite is described in [Interaction Callback Functions](../effect-details/interaction-callback-functions). |
-| `utils` | Graphical and mathematical callbacks. This pointer is defined at all times. |
-| `effect_ref` | Opaque data that must be passed to most of the various callback routines.<br /><br />After Effects uses this to identify your plug-in. |
-| `quality` | The current quality setting, either `PF_Quality_HI` or `PF_Quality_LO`.<br /><br />Effects should perform faster in LO, and more accurately in HI.<br /><br />The graphics utility callbacks perform differently between LO and HI quality; so should your effect!<br /><br />This field is defined during all frame and sequence selectors. |
-| `version` | Effects specification version, Indicate the version you need to run successfully during `PF_Cmd_GLOBAL_SETUP`. |
-| `serial_num` | The serial number of the invoking application. |
-| `appl_id` | The identifier of the invoking application.<br /><br />If your plug-in is running in After Effects, `appl_id` contains the application creator code 'FXTC'.<br /><br />If it is running in [Premiere Pro & Other Hosts](../ppro/ppro) it will be 'PrMr'.<br /><br />Use this to test whether your plug-in, licensed for use with one application, is being used with another. |
-| `num_params` | Input parameter count. |
-| `what_cpu` | Under macOS this contains the Gestalt value for CPU type (see Inside Macintosh, volume 6). Undefined on Windows. |
-| `what_fpu` | Under macOS this contains the Gestalt value for FPU type. Undefined on Windows. |
-| `current_time` | The time of the current frame being rendered, valid during [PF_Cmd_RENDER](command-selectors#frame-selectors).<br /><br />This is the current time in the layer, not in any composition.<br /><br />If a layer starts at other than time 0 or is time-stretched, layer time and composition time are distinct.<br /><br />The current frame number is `current_time` divided by `time_step`.<br /><br />The current time in seconds is `current_time` divided by time_scale.<br /><br />To handle time stretching, composition frame rate changes, and time remapping, After Effects may ask effects to render at non-integral times (between two frames).<br /><br />Be prepared for this; don't assume that you'll only be asked for frames on frame boundaries.<br /><br />!!! note<br />As of CS3 (8.0), effects may be asked to render at negative current times. Deal! |
-| `time_step` | The duration of the current source frame being rendered.<br /><br />In several situations with nested compositions, this source frame duration may be different than the time span between frames in the layer (`local_time_step`).<br /><br />This value can be converted to seconds by dividing by time_scale.<br /><br />When calculating other source frame times, such as for [PF_CHECKOUT_PARAM](../effect-details/interaction-callback-functions#interaction-callbacks), use this value rather than `local_time_step`.<br /><br />Can be negative if the layer is time-reversed. Can vary from one frame to the next if time remapping is applied on a nested composition.<br /><br />Can differ from local_time_step when source material is stretched or remapped in a nested composition.<br /><br />For example, this could occur when an inner composition is nested within an outer composition with a different frame rate, or time remapping is applied to the outer composition.<br /><br />This value will be 0 during [PF_Cmd_SEQUENCE_SETUP](command-selectors#sequence-selectors) if it is not constant for all frames.<br /><br />It will be set correctly during `PF_Cmd_FRAME_SETUP` and `PF_Cmd_FRAME_SETDOWN` selectors.<br /><br />!!! warning<br />This can be zero, so check it before you divide. |
-| `total_time` | Duration of the layer.<br /><br />If the layer is time-stretched longer than 100%, the value will be adjusted accordingly; but if the layer is time-stretched shorter, the value will not be affected.<br /><br />If time remapping is enabled, this value will be the duration of the composition.<br /><br />This value can be converted to seconds by dividing by `time_scale`. |
-| `local_time_step` | Time difference between frames in the layer.<br /><br />Affected by any time stretch applied to a layer.<br /><br />Can be negative if the layer is time-reversed.<br /><br />Unlike `time_step`, this value is constant from one frame to the next.<br /><br />This value can be converted to seconds by dividing by `time_scale`.<br /><br />For a step value that is constant over the entire frame range of the layer, use `local_time_step`, which is based on the composition's framerate and layer stretch. |
-| `time_scale` | The units per second that `current_time`, `time_step`, `local_time_step` and `total_time` are in.<br /><br />If `time_scale` is 30, then the units of `current_time`, `time_step`, `local_time_step` and `total_time` are in 30ths of a second.<br /><br />The `time_step` might then be 3, indicating that the sequence is actually being rendered at 10 frames per second. `total_time` might be 105, indicating that the sequence is 3.5 seconds long. |
-| `field` | Valid only if [PF_OutFlag_PIX_INDEPENDENT](PF_OutData#pf_outflags) was set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />Check this field to see if you can process just the upper or lower field. |
-| `shutter_angle` | Motion blur shutter angle. Values range from 0 to 1, which represents 360 degrees.<br /><br />Will be zero unless motion blur is enabled and checked for the target layer.<br /><br />`shutter_angle == 180` means the time interval between `current_time` and `current_time + 1/2 time_step`.<br /><br />Valid only if [PF_OutFlag_I_USE_SHUTTER_ANGLE](PF_OutData#pf_outflags) was set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />See the section on [Motion Blur](../effect-details/motion-blur) for details on how to implement motion blur in your effect. |
-| `width` | Dimensions of the source layer, which are not necessarily the same as the width and height fields in the input image parameter.<br /><br />Buffer resizing effects can cause this difference. Not affected by downsampling. |
-| `height` |   |
-| `extent_hint` | The intersection of the visible portions of the input and output layers; encloses the composition rectangle transformed into layer coordinates.<br /><br />Iterating over only this rectangle of pixels can speed your effect dramatically. See [extent_hint Usage](#extent_hint-usage) later in this chapter regarding proper usage. |
-| `output_origin_x` | The origin of the output buffer in the input buffer. Non-zero only when the effect changes the origin. |
-| `output_origin_y` |   |
-| `downsample_x` | Point control parameters and layer parameter dimensions are automatically adjusted to compensate for a user telling After Effects to render only every nth pixel.<br /><br />Effects need the downsampling factors to interpret scalar parameters representing pixel distances in the image (like sliders).<br /><br />For example, a blur of 4 pixels should be interpreted as a blur of 2 pixels if the downsample factor is 1/2 in each direction (downsample factors are represented as ratios.)<br /><br />Valid only during:<br /><br />- [PF_Cmd_SEQUENCE_SETUP](command-selectors#sequence-selectors)<br />- [PF_Cmd_SEQUENCE_RESETUP](command-selectors#sequence-selectors)<br />- [PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors)<br />- [PF_Cmd_RENDER](command-selectors#frame-selectors) |
-| `downsample_y` |   |
-| `pixel_aspect_ratio` | Pixel aspect ratio (width over height). |
-| `in_flags` | Unused. |
-| `global_data` | Data stored by your plug-in during other selectors. Locked and unlocked by After Effects before and after calling the plug-in. |
-| `sequence_data` |   |
-| `frame_data` |   |
-| `start_sampL` | Starting sample number, relative to the start of the audio layer. |
-| `dur_sampL` | Duration of audio, expressed as the number of samples. Audio-specific. |
-| `total_sampL` | Samples in the audio layer; equivalent to total_time expressed in samples. |
-| `src_snd` | `PF_SoundWorld` describing the input sound. Audio-specific. |
-| `pica_basicP` | Pointer to the PICA Basic suite, used to acquire other suites. |
-| `pre_effect_source_origin_x` | Origin of the source image in the input buffer. Valid only when sent with a frame selector.<br /><br />Non-zero only if one or more effects that preceded this effect on the same layer resized the output buffer and moved the origin.<br /><br />Check for both the resize and the new origin to determine output area.<br /><br />This is useful for effects which have implicit spatial operations (other than point controls), like flipping a file around an image's center.<br /><br />!!! note<br />Checked-out point parameters are adjusted for the pre-effect origin at the current time, not the time being checked out. |
-| `pre_effect_source_origin_y` |   |
-| `shutter_phase` | Offset from frame time to shutter open time as a percentage of a frame duration. |
+| `inter` | ユーザー操作、パラメータ追加、進捗表示、中断確認、現在時刻以外の値取得などに使うコールバック群です。詳細は [Interaction Callback Functions](../effect-details/interaction-callback-functions) を参照してください。 |
+| `utils` | グラフィック処理や数値計算のユーティリティコールバックです。常に有効です。 |
+| `effect_ref` | 多くのコールバック呼び出し時に渡す識別子です。After Effects はこれでプラグインを識別します。 |
+| `quality` | 現在の画質設定です（`PF_Quality_HI` / `PF_Quality_LO`）。通常、`LO` は高速、`HI` は高精度向けです。 |
+| `version` | エフェクト仕様バージョンです。`PF_Cmd_GLOBAL_SETUP` で必要なバージョンを示します。 |
+| `serial_num` | 呼び出し元アプリケーションのシリアル番号です。 |
+| `appl_id` | 呼び出し元アプリの識別子です。After Effects は `FXTC`、[Premiere Pro など](../ppro/ppro) は `PrMr` です。ホスト判定やライセンス制御に使えます。 |
+| `num_params` | 入力パラメータ数です。 |
+| `what_cpu` | macOS では CPU 種別（Gestalt 値）が入ります。Windows では未定義です。 |
+| `what_fpu` | macOS では FPU 種別（Gestalt 値）が入ります。Windows では未定義です。 |
+| `current_time` | 現在レンダリング中フレームの時刻です。レイヤー時間基準であり、コンポ時間ではありません。`time_step` で割るとフレーム番号、`time_scale` で割ると秒に変換できます。タイムリマップやストレッチ時はフレーム境界外（非整数時刻）や負の時刻が渡されることがあります。 |
+| `time_step` | 現在レンダリング中の「ソースフレームの長さ」です。`local_time_step` と異なりフレームごとに変化する場合があります。ネストやタイムリマップ時には負値や可変値になり得ます。`PF_CHECKOUT_PARAM` など別時刻計算にはこちらを使ってください。0 の場合があるため除算前に必ず確認します。 |
+| `total_time` | レイヤー全体の長さです。`time_scale` で割ると秒へ変換できます。タイムストレッチやタイムリマップ設定の影響を受けます。 |
+| `local_time_step` | レイヤー上でのフレーム間隔です。レイヤーストレッチを反映し、通常はフレーム間で一定です。逆再生時は負値になり得ます。 |
+| `time_scale` | `current_time` / `time_step` / `local_time_step` / `total_time` の時間単位（1 秒あたりの単位数）です。 |
+| `field` | `PF_OutFlag_PIX_INDEPENDENT` を設定した場合に有効です。上フィールド / 下フィールド処理の判断に使います。 |
+| `shutter_angle` | モーションブラーのシャッター角情報です。`PF_OutFlag_I_USE_SHUTTER_ANGLE` を設定した場合に有効です。詳細は [Motion Blur](../effect-details/motion-blur) を参照してください。 |
+| `width` | ソースレイヤー幅です。入力画像パラメータのサイズと一致しない場合があります（上流でバッファ拡張された場合など）。ダウンサンプルの影響は受けません。 |
+| `height` | ソースレイヤー高さです（`width` と同様）。 |
+| `extent_hint` | 入力と出力の可視領域の交差矩形です。ここに限定して処理すると大きく高速化できます。 |
+| `output_origin_x` | 入力バッファ基準での出力バッファ原点 X です。原点を移動した場合のみ非 0 になります。 |
+| `output_origin_y` | 入力バッファ基準での出力バッファ原点 Y です。 |
+| `downsample_x` | ダウンサンプリング率（X）です。スライダー値など「ピクセル距離を表す値」を解釈する際に使用します。`PF_Cmd_SEQUENCE_SETUP` / `PF_Cmd_SEQUENCE_RESETUP` / `PF_Cmd_FRAME_SETUP` / `PF_Cmd_RENDER` で有効です。 |
+| `downsample_y` | ダウンサンプリング率（Y）です。 |
+| `pixel_aspect_ratio` | ピクセルアスペクト比（幅 / 高さ）です。 |
+| `in_flags` | 未使用です。 |
+| `global_data` | プラグインが保持するグローバルデータです。呼び出し前後で After Effects がロック / アンロックを管理します。 |
+| `sequence_data` | プラグインが保持するシーケンスデータです。 |
+| `frame_data` | プラグインが保持するフレームデータです。 |
+| `start_sampL` | オーディオレイヤー先頭基準の開始サンプル番号です。 |
+| `dur_sampL` | オーディオ長（サンプル数）です。 |
+| `total_sampL` | オーディオレイヤー全体のサンプル数です（`total_time` のサンプル版）。 |
+| `src_snd` | 入力オーディオを表す `PF_SoundWorld` です。 |
+| `pica_basicP` | 他スイート取得に使う PICA Basic スイートへのポインタです。 |
+| `pre_effect_source_origin_x` | 上流エフェクトによるリサイズ / 原点移動を反映した、入力バッファ中のソース原点 X です。フレーム系セレクターで有効です。 |
+| `pre_effect_source_origin_y` | 上流エフェクトによるリサイズ / 原点移動を反映した、入力バッファ中のソース原点 Y です。 |
+| `shutter_phase` | フレーム時刻に対するシャッター開時刻のオフセットです（フレーム長に対する割合）。 |
 
 ---
 
-## エクステントヒントの使用法
+## `extent_hint` の使い方
 
-:::note
-[SmartFX](../smartfx/smartfx) の場合、ヒントの四角形ははるかに効果的で複雑です。
-
+:::not
+e
+[SmartFX](../smartfx/smartfx) では `extent_hint` の扱いがより厳密です。SmartFX 実装時は SmartFX の仕様を優先してください。
 :::
-`extent_hint` を使用して、出力が必要なピクセルのみを処理します。これは最も簡単な最適化の 1 つです。
 
-[PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) (および PiPL) 中に [PF_OutData](PF_OutData#pf_outdata) に [PF_OutFlag_USE_OUTPUT_EXTENT](PF_OutData#pf_outflags) を設定することで、`in_data>extent_hint` を使用することを After Effects に伝えます。
+`extent_hint` を使うと「実際に必要な画素範囲」だけを処理でき、実装コストが低いわりに効果の大きい最適化になります。
 
-`extent_hint` コードをテストする前に環境設定メニューからキャッシュを無効にして、コンポジション内の何かが変更されるたびに After Effects がエフェクトをレンダリングできるようにします。
+`PF_Cmd_GLOBAL_SETUP`（および PiPL）で [PF_OutFlag_USE_OUTPUT_EXTENT](pf_outdata#pf_outflags) を設定すると、After Effects に `in_data->extent_hint` を利用することを伝えられます。
 
-そうしないと、キャッシュ メカニズムによってプラグインの (おそらく正しくない) 出力が不明瞭になってしまいます。
+実装確認時は、一度キャッシュを無効化して挙動を確認してください。キャッシュ有効のままだと、不正な出力がキャッシュで隠れて気付きにくくなります。
 
-コンポジション内でレイヤーを移動してトリミングします。 `output>extent_hint` は、コンポジション内で表示されるレイヤーの部分です。
+- レイヤーの移動・トリミングを行い、`extent_hint` の変化を確認する
+- マスクを追加・移動し、交差矩形が適切に更新されるか確認する
+- バッファ拡張を行う場合は、`output_origin_x/y` を考慮して出力座標系へ補正する
+- ダウンサンプリング時でもフル解像度で破綻しないサイズ計算にする
 
-マスクをレイヤーに追加し、移動させます。
-
-これにより、画像のゼロ以外のアルファ領域をすべて囲む `extent_hint` が変更されます。
-
-`in_data>extent_hint` は、これら 2 つの長方形 (コンポジションとマスク) の交差部分であり、交差するたびに変化します。
-
-[PF_OutFlag_PIX_INDEPENDENT](PF_OutData#pf_outflags) を設定するエフェクトの入力範囲と出力範囲の間の四角形の交差を簡略化するために、サイズ変更と原点シフトの前に、元の入力レイヤーの座標空間で範囲四角形が計算されます。
-
-出力バッファの座標系で出力範囲を取得するには、`PF_InData->output_origin_x` フィールドと `y` フィールドによって `extent_hint` をオフセットします。
-
-出力サイズを計算するときにダウンサンプリングを考慮します。ユーザーは最大解像度でレンダリングできる必要があります。
-
-出力バッファーが 30,000 x 30,000 を超える場合は、出力バッファーをそのサイズに固定し、警告ダイアログを表示することを検討してください。
-
-コードが正しく動作したら、キャッシュを有効にして、エフェクトを再レンダリングする必要がある頻度を確認します。
-
-ドロップ シャドウを考えてみましょう。ユーザーは静止画像に静的なドロップ シャドウを頻繁に適用します。
-
-`output>extent_hint` は無視されるため、キャッシュがより頻繁に使用されます。
-
-バッファ拡張エフェクトの場合は、`output>extent_hint` をプラグインの変換された境界と交差させ、[PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors) 中にそれに応じてサイズを設定します。
+バッファ拡張型エフェクトでは、`PF_Cmd_FRAME_SETUP` 中に `output->extent_hint` と実際の変換境界の交差で出力サイズを決めると安全です。
 
 ---
 
-## ピクセルが 20% 増加しました!6.0 の時点では、渡されるエクステント ヒントは、予測レンダリングの決定に役立つように、レイヤー自体より 20% 大きくなっています。
+## AE 6.0 以降の 20% マージン
 
-多くのエフェクトは「タッチするだけ」でバッファを拡張し、After Effects は後でヒント四角形を使用することがよくあります。
+AE 6.0 以降、`extent_hint` は予測レンダリングを助けるため、レイヤー境界より最大 20% 大きく渡される場合があります。
+
+これは「少しだけ外側も参照する」タイプのエフェクトでキャッシュ効率を上げるための仕様です。
 
 ---
 
-## ポイント コントロールとバッファ拡張
+## ポイントパラメータとバッファ拡張
 
-出力バッファを拡張するエフェクトは、[PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors) 中に `PF_InData` に `output_origin_x/y` を設定することで、元のレイヤーの左上隅に位置します。
+出力バッファを拡張するエフェクトは、`PF_Cmd_FRAME_SETUP` で `output_origin_x/y` を設定して元レイヤーとの対応位置を示します。  
+このシフトは後段エフェクトへ `pre_effect_source_origin_x/y` として引き継がれ、ポイントパラメータにも反映されます。
 
-このシフトは、`pre_effect_source_origin_x/y` の後続の効果に報告されます。ポイント パラメータは、このシフトに合わせて自動的に調整されます。
+上流に Gaussian Blur や Resizer のような拡張系エフェクトがある状態で位置ずれが起きる場合、`pre_effect_source_origin_x/y` の扱い漏れを疑ってください。
 
-Gaussian Blur や Resizer SDK サンプルなどのバッファー エクスパンダをエフェクトの「前」に適用し、大きなサイズ変更値を使用します。
-
-エフェクトが `pre_effect_source_origin_x/y` を正しく処理していない場合、ブラーのオンとオフを切り替えると出力の位置が移動します。
-
-すべてのポイント パラメータ値は (常に) `pre_effect_source_origin_x/y` で記述されたシフト値を持ちます。ほとんどのエフェクトでは、これは透過的に機能します。
-
-ただし、バッファ拡張が時間の経過とともに変化する場合 (アニメーション化されたブラー量と同様)、原点のシフトによりアニメーション化されていないポイントが移動します。
-
-フレーム間のポイント パラメータ値をキャッシュするエフェクトを設計するときは、これを考慮してください。
+また、拡張量が時間変化する場合は、原点シフトにより「見かけ上固定のポイント」が動くことがあります。フレーム間でポイント値をキャッシュする設計では、この影響を考慮してください。

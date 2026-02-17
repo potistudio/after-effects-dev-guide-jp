@@ -7,6 +7,14 @@ import { STARLIGHT_SIDEBAR } from './docs-structure.mjs';
 export default defineConfig({
 	output: 'static',
 	site: 'https://aeddjp.poti.studio',
+	compressHTML: true,
+	prefetch: {
+		prefetchAll: true,
+		defaultStrategy: 'load',
+	},
+	experimental: {
+		clientPrerender: true,
+	},
 	integrations: [
 		starlight({
 			title: 'After Effects C++ SDK ガイド（日本語）',

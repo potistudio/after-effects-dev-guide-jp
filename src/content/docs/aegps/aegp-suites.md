@@ -1,7 +1,7 @@
 ---
 title: 'AEGP Suite'
 ---
-前述したように、AEGP はスイートを通じてすべてを実行します。次のスイートはすべてのタイプの AEGP で使用され、任意のフック関数内から呼び出すことができます (ただし、AEGP のエントリ ポイント内から使用する必要がある RegisterSuite を除く)。以下に、各スイートの各関数の説明と、必要に応じてそれらの関数の使用方法の詳細を示します。
+前述したように、AEGP はスイートを通じてすべてを実行します。次のスイートはすべてのタイプの AEGP で使用され、任意のフック関数内から呼び出すことができます (ただし、AEGP のエントリポイント内から使用する必要がある RegisterSuite を除く)。以下に、各スイートの各関数の説明と、必要に応じてそれらの関数の使用方法の詳細を示します。
 
 | Suite | Description |
 | --- | --- |
@@ -146,10 +146,10 @@ Use caution: the functions for opening and creating projects do not save changes
 
 ### AEGP_TimeDisplay2
 
-@@PH0@@
-Values in unused fields persist when After Effects is using a different display type.
+:::note
+未使用フィールドの値は、After Effects が別の表示タイプを使用していても保持されます。
+:::
 
-@@PH1@@
 | Member | Descrpition |
 | --- | --- |
 | `AEGP_TimeDisplayType type;` | One of the following:<br /><br />- `AEGP_TimeDisplayType_TIMECODE`<br />- `AEGP_TimeDisplayType_FRAMES`<br />- `AEGP_TimeDisplayType_FEET_AND_FRAMES` |
@@ -204,10 +204,10 @@ Unless more specificity is required for the function(s) you're using, remain as 
 | `AEGP_SetItemLabel` | Sets an item's label.<br /><br /><pre lang="cpp">AEGP_SetItemLabel(<br/>  AEGP_ItemH    itemH,<br/>  AEGP_LabelID  label);</pre> |
 | `AEGP_GetItemMRUView` | Gets an item's most recently used view. The view can be used with two calls in the `AEGP_ColorSettingsSuite`, to perform a color transform on a pixel buffer from working to view color space.<br /><br /><pre lang="cpp">AEGP_GetItemMRUView(<br/>  AEGP_ItemH      itemH,<br/>  AEGP_ItemViewP  \*mru_viewP);</pre> |
 
-@@PH2@@
-`AEGP_RenderNewItemSoundData()` used to be here, but is now part of [AEGP_RenderSuite4](#aegp_rendersuite4).
+:::note
+`AEGP_RenderNewItemSoundData()` は以前ここにありましたが、現在は [AEGP_RenderSuite4](#aegp_rendersuite4) に移動しています。
+:::
 
-@@PH3@@
 ---
 
 ## Managing Selections
@@ -885,10 +885,10 @@ After Effects can handle plug-ins which change the preferences during their appl
 | `AEGP_GetNumKeys` | Retrieves the number of value keys in the section.<br /><br /><pre lang="cpp">AEGP_GetNumKeys(<br/>  AEGP_PersistentBlobH  blobH,<br/>  const A_char          \*section_keyZ,<br/>  A_long                \*num_keysPL);</pre> |
 | `AEGP_GetValueKeyByIndex` | Retrieves the value of the indexed key.<br /><br /><pre lang="cpp">AEGP_GetValueKeyByIndex(<br/>  AEGP_PersistentBlobH  blobH,<br/>  const A_char          \*section_keyZ,<br/>  A_long                key_index,<br/>  A_long                max_key_size,<br/>  A_char                \*value_keyZ);</pre> |
 
-@@PH0@@
-For the functions below, if a given key is not found, the default value is both written to the blob and returned as the value; if no default is provided, a blank value will be written and returned.
+:::note
+以下の関数では、キーが見つからない場合に既定値が blob へ書き込まれ、その値が返されます。既定値未指定なら空値が書き込まれて返されます。
+:::
 
-@@PH1@@
 | Function | Purpose |
 | --- | --- |
 | `AEGP_GetDataHandle` | Obtains the value associated with the given section's key. If using in-memory data structures, watch for endian issues.<br /><br /><pre lang="cpp">AEGP_GetDataHandle(<br/>  AEGP_PluginID         plugin_id,<br/>  AEGP_PersistentBlobH  blobH,<br/>  const A_char          \*section_keyZ,<br/>  const A_char          \*value_keyZ,<br/>  AEGP_MemHandle        defaultH0,<br/>  AEGP_MemHandle        \*valuePH);</pre> |
@@ -977,10 +977,10 @@ Then do the rendering with [AEGP_RenderSuite4](#aegp_rendersuite4).
 
 ### AEGP_LayerRenderOptionsSuite1
 
-@@PH2@@
-New in 13.0
+:::note
+13.0 で追加されました。
+:::
 
-@@PH3@@
 | Function | Purpose |
 | --- | --- |
 | `AEGP_NewFromLayer` | Returns the `AEGP_LayerRenderOptionsH` associated with a given `AEGP_LayerH`.<br /><br />Render time is set to the layer's current time, time step is set to layer's frame duration, ROI to the layer's nominal bounds, and EffectsToRender to "all".<br /><br />`optionsPH` must be disposed by calling code.<br /><br /><pre lang="cpp">AEGP_NewFromLayer(<br/>  AEGP_PluginID             plugin_id,<br/>  AEGP_LayerH               layerH,<br/>  AEGP_LayerRenderOptionsH  \*optionsPH);</pre> |
@@ -1208,11 +1208,10 @@ Factoid: For each frame rendered for a given render item, the list of output mod
 
 These functions provide a way for effects (and AEGPs) to obtain information about the context of an applied effect.
 
-@@PH0@@
-Any time you modify or rely on data from outside the normal render pipeline, you run the risk of dependency problems.
-
-@@PH1@@
-There is no way for After Effects to know that you depend on this external information; consequently, you will not be notified if it changes out from under you.
+:::warning
+通常のレンダーパイプライン外のデータを変更・参照する場合、依存関係問題が発生しやすくなります。  
+After Effects はその外部依存を認識できないため、変更時に自動通知されません。
+:::
 
 ### AEGP_PFInterfaceSuite1
 

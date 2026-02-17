@@ -1,103 +1,99 @@
 ---
 title: 'PF_OutData'
 ---
-`PF_OutData` を使用して、プラグインによって加えられた変更を After Effects に伝えます。これらのフィールドを変更するための有効な時間が記載されています。
+`PF_OutData` は、プラグイン側で設定した結果や機能フラグを After Effects へ返すための構造体です。  
+各フィールドには「どのセレクターで設定できるか」という制約があります。
 
 ---
 
 ## PF_OutData メンバー
 
-| Field | Description |
+| フィールド | 説明 |
 | --- | --- |
-| `my_version` | Set this flag (using the PF_VERSION macro) to the version of your plug-in code.<br /><br />After Effects uses this data to decide which of duplicate effects to load. |
-| `name` | Unused. |
-| `global_data` | Handle which will be returned to you in [PF_InData](PF_InData) with every call.<br /><br />Use After Effects' memory allocation functions. |
-| `num_params` | After Effects checks this field against the number of calls made to `PF_ADD_PARAM`, as well as the implicit input layer. |
-| `sequence_data` | Allocatable upon receiving [PF_Cmd_SEQUENCE_SETUP](command-selectors#sequence-selectors), this handle will be passed back to you in [PF_InData](PF_InData) during all subsequent calls. |
-| `flat_sdata_size` | Unused (After Effects knows the size, because you used its allocation functions to get the memory in the first place). |
-| `frame_data` | Handle you (might have) allocated during [PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors).<br /><br />This is never written to disk; it was used to pass information from your [PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors) response to your [PF_Cmd_RENDER](command-selectors#frame-selectors) or [PF_Cmd_FRAME_SETDOWN](command-selectors#frame-selectors) (which you must do if you resize the output buffer).<br /><br />Otherwise, this memory is rarely used. |
-| `width`, `height`, `origin` | Set during [PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors) if the output image size differs from the input.<br /><br />`width` and `height` are the size of the output buffer, and `origin` is the point the input should map to in the output.<br /><br />To create a 5-pixel drop shadow up and left, set origin to (5, 5). |
-| [out_flags](#pf_outflags) | Send messages to After Effects. OR together multiple values. |
-| `return_msg` | After Effects displays any C string you put here (checked and cleared after every command selector). |
-| `start_sampL`, `dur_sampL`, `dest_snd` | Used only for [Audio](../audio/audio) commands |
-| [out_flags2](#pf_outflags2) | Send messages to After Effects. OR together multiple values. |
+| `my_version` | `PF_VERSION` マクロでプラグインのバージョンを設定します。重複エフェクトがある場合、After Effects はこの値を使って読み込む対象を判断します。 |
+| `name` | 未使用です。 |
+| `global_data` | 毎回の呼び出しで [PF_InData](pf_indata) に返されるグローバルデータハンドルです。確保には After Effects のメモリ API を使用してください。 |
+| `num_params` | `PF_ADD_PARAM` の呼び出し数（暗黙の入力レイヤーを含む）と照合されます。 |
+| `sequence_data` | `PF_Cmd_SEQUENCE_SETUP` で確保するシーケンスデータハンドルです。以降の呼び出しで [PF_InData](pf_indata) に返されます。 |
+| `flat_sdata_size` | 未使用です。 |
+| `frame_data` | `PF_Cmd_FRAME_SETUP` で確保するフレーム単位データです。ディスク保存はされず、`FRAME_SETUP` から `RENDER` / `FRAME_SETDOWN` への一時受け渡しに使います。 |
+| `width`, `height`, `origin` | 入力と出力サイズが異なる場合に `PF_Cmd_FRAME_SETUP` で設定します。`origin` は「入力画像を出力バッファのどこへ対応づけるか」を示します。 |
+| [out_flags](#pf_outflags) | After Effects へ能力・状態を通知するフラグ群です（OR で複数指定）。 |
+| `return_msg` | ここに設定した C 文字列は After Effects 側で表示されます（各セレクター後に確認・クリアされます）。 |
+| `start_sampL`, `dur_sampL`, `dest_snd` | [オーディオ処理](../audio/audio) セレクターで使用します。 |
+| [out_flags2](#pf_outflags2) | `out_flags` と同様の追加フラグ群です（OR で複数指定）。 |
 
 ---
 
 ## PF_OutFlags
 
-These flags communicate capability and status information to After Effects. In previous versions they were also used to send rudimentary messages, e.g. refresh the UI, send an error message.
+`PF_OutFlags` は、エフェクトの機能・依存関係・キャッシュ特性を After Effects に伝えるためのフラグです。  
+変更時はソースコードだけでなく [PiPL](../intro/pipl-resources) も合わせて更新してください。  
+一部フラグはセッション中に動的変更できます。
 
-These capabilities have been supplanted by function suites, and all new messaging functions will come in that format. However, capability flags are still contained in the [PiPL](../intro/pipl-resources).
-
-Update both the PiPL and your source code when you make a change. Many of these flags can be changed during an After Effects session.
-
-| Flag | Indicates |
+| フラグ | 意味 |
 | --- | --- |
-| `PF_OutFlag_KEEP_RESOURCE_OPEN` | The plug-in's resources must be available during all commands.<br /><br />During [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors), the plug-in's resources are always open, but unavailable at all other times (except during [PF_Cmd_ABOUT](command-selectors#global-selectors) and [PF_Cmd_DO_DIALOG](command-selectors#messaging)), unless this flag has been set.<br /><br />Set if you need access to resources at any time other than during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />!!! note<br />We recommend the plug-in load and store the necessary resources in global data, rather than keeping the file's resources open. |
-| `PF_OutFlag_WIDE_TIME_INPUT` | The effect checks out a parameter at a time other than `current_time`.<br /><br />If you use a parameter (including layer parameters) from another time, set this flag.<br /><br />Otherwise, After Effects won't correctly invalidate cached frames used by your effect.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />If you set this flag, we strongly recommend you also set `PF_OutFlag2_AUTOMATIC_WIDE_TIME_INPUT` for better performance. |
-| `PF_OutFlag_NON_PARAM_VARY` | With this flag set, After Effects will not cache output when the effect is applied to a still.<br /><br />Otherwise, After Effects will cache your output to be used to render other frames, if possible.<br /><br />Set this flag if output varies based on something besides a parameter value.<br /><br />If the effect produces changing frames when applied to a still image and all parameters are constant, that's a sure sign that this bit should be set (e.g. Wave Warp).<br /><br />Particle effects, for example, will need this.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />Can be overridden dynamically if needed during [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging).<br /><br />Turn this off whenever possible to improve performance. |
-| `PF_OutFlag_RESERVED6` | Unused. Formerly `PF_OutFlag_SEND_PARAMS_UPDATE`. Replaced by `PF_OutFlag_REFRESH_UI`. |
-| `PF_OutFlag_SEQUENCE_DATA_NEEDS_FLATTENING` | Both After Effects and Premiere Pro assume this flag is set.<br /><br />Flattening is necessary when sequence data contains referencing items (pointers, handles), which must be flattened for storage and unflattened for use.<br /><br />See [PF_Cmd_SEQUENCE_RESETUP](command-selectors#sequence-selectors). |
-| `PF_OutFlag_I_DO_DIALOG` | Effect displays a dialog in response to [PF_Cmd_DO_DIALOG](command-selectors#messaging).<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors), checked during [PF_Cmd_SEQUENCE_SETUP](command-selectors#sequence-selectors).<br /><br />!!! note<br />The effect's response to `PF_OutFlag_I_DO_DIALOG` is not undoable. You can use arbitrary data with a custom UI, should such changes become necessary. |
-| `PF_OutFlag_USE_OUTPUT_EXTENT` | Effect honors the output `extent_rect`. Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />See details at the end of the chapter for proper usage.<br /><br />!!! note<br />Obsolete for SmartFX. |
-| `PF_OutFlag_SEND_DO_DIALOG` | Effect must show dialog to function (added for compatibility with Photoshop plug-ins).<br /><br />After Effects sends [PF_Cmd_DO_DIALOG](command-selectors#messaging) after [PF_Cmd_SEQUENCE_SETUP](command-selectors#sequence-selectors).<br /><br />Set during [PF_Cmd_SEQUENCE_RESETUP](command-selectors#sequence-selectors), not during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors). |
-| `PF_OutFlag_DISPLAY_ERROR_MESSAGE` | Display the contents of `return_msg` in an error dialog.<br /><br />Whenever return_msg is non-NULL, After Effects displays the contents in a dialog, which will be an error dialog if this flag is set.<br /><br />Set after any command, and can be used during debugging.<br /><br />This is also a good way to implement nag messages for tryout versions. |
-| `PF_OutFlag_I_EXPAND_BUFFER` | Effect expands the output buffer.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />Set this flag and `PF_OutFlag_USE_OUTPUT_EXTENT` to use the intersection of the output `extent_rect` and your new buffer size during [PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors).<br /><br />Use `pre_effect_source_origin` fields to detect other transformations.<br /><br />!!! note<br />Only set this flag if you need to; it drastically reduces caching efficiency.<br /><br />!!! note<br />Obsolete for SmartFX. |
-| `PF_OutFlag_PIX_INDEPENDENT` | A given pixel is independent of the pixels around it.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) or [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging).<br /><br />As an example, color correction effects are typically pixel independent, distortions are not.<br /><br />!!! note<br />If your effect doesn't use the color values of one pixel to affect those of adjacent pixels, set this outflag!<br /><br />It can provide dramatic performance improvements. |
-| `PF_OutFlag_I_WRITE_INPUT_BUFFER` | The effect writes into the input buffer.<br /><br />This is of limited use; while saving an allocation, it invalidates some pipeline caching. Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors). |
-| `PF_OutFlag_I_SHRINK_BUFFER` | The effect shrinks its buffer based on the `extent_rect` in order to be more memory efficient.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) whenever possible.<br /><br />!!! note<br />Obsolete for SmartFX. |
-| `PF_OutFlag_WORKS_IN_PLACE` | Unused. |
-| `PF_OutFlag_SQUARE_PIX_ONLY` | Unused. |
-| `PF_OutFlag_CUSTOM_UI` | The effect has a custom user interface and requires [PF_Cmd_EVENT](command-selectors#messaging) messages.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors). |
-| `PF_OutFlag_RESERVED5` | Unused. |
-| `PF_OutFlag_REFRESH_UI` | Refresh the entire effect controls, composition, and layer windows.<br /><br />Set during [PF_Cmd_EVENT](command-selectors#messaging), [PF_Cmd_RENDER](command-selectors#frame-selectors), and [PF_Cmd_DO_DIALOG](command-selectors#messaging).<br /><br />If refreshing custom UI during `PF_Cmd_EVENT`, we recommend using the [new redraw mechanism](../effect-ui-events/custom-ui-and-drawbot) with finer granularity. |
-| `PF_OutFlag_NOP_RENDER` | Set this flag during [PF_Cmd_FRAME_SETUP](command-selectors#frame-selectors) to invalidate the current render. |
-| `PF_OutFlag_I_USE_SHUTTER_ANGLE` | Indicates rendered images depend upon the value of `shutter_angle`. |
-| `PF_OutFlag_I_USE_AUDIO` | Effect's parameters depend on audio data, obtained using [PF_CHECKOUT_LAYER_AUDIO](../effect-details/interaction-callback-functions#interaction-callbacks). |
-| `PF_OutFlag_I_AM_OBSOLETE` | Effect is available for use when working with an old project in which it was originally applied, but doesn't appear in the effect menu. |
-| `PF_OutFlag_FORCE_RERENDER` | Effect made a change that requires a re-render. PF_ChangeFlag_CHANGED_VALUE also forces a re-render. |
-| `PF_OutFlag_PiPL_OVERRIDES_OUTDATA_OUTFLAGS` | After Effects will use PiPL outflags, and ignore those set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors). |
-| `PF_OutFlag_I_HAVE_EXTERNAL_DEPENDENCIES` | Effect depends on an external file (or external font).<br /><br />If set, After Effects sends [PF_Cmd_GET_EXTERNAL_DEPENDENCIES](command-selectors#messaging). |
-| `PF_OutFlag_DEEP_COLOR_AWARE` | The effect handles 16-bpc color. |
-| `PF_OutFlag_SEND_UPDATE_PARAMS_UI` | Set this flag during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) to receive [PF_Cmd_UPDATE_PARAMS_UI](command-selectors#messaging). |
-| `PF_OutFlag_AUDIO_FLOAT_ONLY` | Effect requires audio data in PF_SIGNED_FLOAT format.<br /><br />After Effects will perform any required format conversion.<br /><br />You must also set either `PF_OutFlag_AUDIO_EFFECT_TOO` or `PF_OutFlag_AUDIO_EFFECT_ONLY`. |
-| `PF_OutFlag_AUDIO_IIR` | Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) if the (audio) effect is an Infinite Impulse Response filter.<br /><br />This is true if output at a given time depends on output from previous times.<br /><br />When an IIR filter receives [PF_Cmd_AUDIO_RENDER](command-selectors#frame-selectors), the input audio time span is the same as the output audio time span (when they intersect with the output time span requested in [PF_Cmd_AUDIO_SETUP](command-selectors#frame-selectors)).<br /><br />In response to [PF_Cmd_AUDIO_SETUP](command-selectors#frame-selectors), the filter can request audio from earlier times (as for delay effects).<br /><br />The filter can access parameters from that earlier time, and should cache them (along with interim audio) in sequence data.<br /><br />If the audio generated does not correspond to the requested output audio's time, the output audio duration should be set to zero.<br /><br />The filter can update its delay line using the parameters and the input audio.<br /><br />Having cached its delay line, request more input audio during [PF_Cmd_AUDIO_SETUP](command-selectors#frame-selectors) based on the last cached delay line. Use [PF_HasParamChanged](../effect-details/parameter-supervision#pf_paramutilsuite3) to determine whether or not your cache is valid. |
-| `PF_OutFlag_I_SYNTHESIZE_AUDIO` | Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) time if the effect generates audio, even when passed silence.<br /><br />You must also set either `PF_OutFlag_AUDIO_EFFECT_TOO` or `PF_OutFlag_AUDIO_EFFECT_ONLY`. |
-| `PF_OutFlag_AUDIO_EFFECT_TOO` | Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) if the effect alters audio. |
-| `PF_OutFlag_AUDIO_EFFECT_ONLY` | Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) if the effect alters only audio output. |
+| `PF_OutFlag_KEEP_RESOURCE_OPEN` | `GLOBAL_SETUP` 以外でもリソースを開いたままにします。通常は必要リソースを `global_data` に読み込んで保持する方法が推奨です。 |
+| `PF_OutFlag_WIDE_TIME_INPUT` | `current_time` 以外の時刻でパラメータを参照する場合に設定します。未設定だとキャッシュ無効化が不正確になることがあります。可能なら `PF_OutFlag2_AUTOMATIC_WIDE_TIME_INPUT` も併用してください。 |
+| `PF_OutFlag_NON_PARAM_VARY` | パラメータ以外の要因で出力が変化することを示します（例: ランダム性のある処理）。静止画に対するキャッシュ利用が抑制されます。 |
+| `PF_OutFlag_RESERVED6` | 未使用です（旧 `PF_OutFlag_SEND_PARAMS_UPDATE`）。 |
+| `PF_OutFlag_SEQUENCE_DATA_NEEDS_FLATTENING` | シーケンスデータにポインタやハンドルを含む場合に必要です。保存時にフラット化し、再読み込み時に復元します。 |
+| `PF_OutFlag_I_DO_DIALOG` | `PF_Cmd_DO_DIALOG` に応答してダイアログを表示するエフェクトで設定します。 |
+| `PF_OutFlag_USE_OUTPUT_EXTENT` | `extent_rect` を尊重して処理することを示します。SmartFX では旧方式です。 |
+| `PF_OutFlag_SEND_DO_DIALOG` | エフェクト動作にダイアログ表示が必須であることを示します（主に互換目的）。 |
+| `PF_OutFlag_DISPLAY_ERROR_MESSAGE` | `return_msg` をエラーダイアログとして表示します。デバッグや試用版メッセージにも使えます。 |
+| `PF_OutFlag_I_EXPAND_BUFFER` | 出力バッファを拡張するエフェクトで設定します。キャッシュ効率が下がるため、本当に必要な場合のみ使用してください。SmartFX では旧方式です。 |
+| `PF_OutFlag_PIX_INDEPENDENT` | 画素ごとの独立処理であることを示します。色補正系は通常設定対象です。設定すると最適化効果が大きい場合があります。 |
+| `PF_OutFlag_I_WRITE_INPUT_BUFFER` | 入力バッファへ直接書き込むことを示します。割り当てを減らせる一方、パイプラインキャッシュに不利です。 |
+| `PF_OutFlag_I_SHRINK_BUFFER` | `extent_rect` に応じてバッファ縮小することを示します。SmartFX では旧方式です。 |
+| `PF_OutFlag_WORKS_IN_PLACE` | 未使用です。 |
+| `PF_OutFlag_SQUARE_PIX_ONLY` | 未使用です。 |
+| `PF_OutFlag_CUSTOM_UI` | カスタム UI を持ち、`PF_Cmd_EVENT` を受け取る必要があることを示します。 |
+| `PF_OutFlag_RESERVED5` | 未使用です。 |
+| `PF_OutFlag_REFRESH_UI` | エフェクト UI / コンポ / レイヤー表示の再描画を要求します。カスタム UI は [Drawbot](../effect-ui-events/custom-ui-and-drawbot) の細粒度更新も検討してください。 |
+| `PF_OutFlag_NOP_RENDER` | `PF_Cmd_FRAME_SETUP` で現在のレンダリングを無効化します。 |
+| `PF_OutFlag_I_USE_SHUTTER_ANGLE` | 出力が `shutter_angle` に依存することを示します。 |
+| `PF_OutFlag_I_USE_AUDIO` | [PF_CHECKOUT_LAYER_AUDIO](../effect-details/interaction-callback-functions#interaction-callbacks) で取得したオーディオに依存することを示します。 |
+| `PF_OutFlag_I_AM_OBSOLETE` | 既存プロジェクト互換のためには使用可能だが、新規適用メニューには表示しないエフェクトを示します。 |
+| `PF_OutFlag_FORCE_RERENDER` | 変更により再レンダリングが必要であることを示します。 |
+| `PF_OutFlag_PiPL_OVERRIDES_OUTDATA_OUTFLAGS` | `GLOBAL_SETUP` で設定した値より PiPL の outflags を優先させます。 |
+| `PF_OutFlag_I_HAVE_EXTERNAL_DEPENDENCIES` | 外部ファイルや外部フォントに依存することを示します。設定時は `PF_Cmd_GET_EXTERNAL_DEPENDENCIES` が送られます。 |
+| `PF_OutFlag_DEEP_COLOR_AWARE` | 16 bpc カラーを扱えることを示します。 |
+| `PF_OutFlag_SEND_UPDATE_PARAMS_UI` | `PF_Cmd_UPDATE_PARAMS_UI` を受け取りたい場合に設定します。 |
+| `PF_OutFlag_AUDIO_FLOAT_ONLY` | オーディオ入力に `PF_SIGNED_FLOAT` 形式を要求します。`AUDIO_EFFECT_TOO` または `AUDIO_EFFECT_ONLY` も設定してください。 |
+| `PF_OutFlag_AUDIO_IIR` | オーディオ処理が IIR（過去出力へ依存）であることを示します。遅延線や中間状態はシーケンスデータに保持し、キャッシュ有効性を確認して利用します。 |
+| `PF_OutFlag_I_SYNTHESIZE_AUDIO` | 無音入力でもオーディオを生成するエフェクトで設定します。`AUDIO_EFFECT_TOO` または `AUDIO_EFFECT_ONLY` も必要です。 |
+| `PF_OutFlag_AUDIO_EFFECT_TOO` | 映像に加えてオーディオも処理するエフェクトで設定します。 |
+| `PF_OutFlag_AUDIO_EFFECT_ONLY` | オーディオのみを処理するエフェクトで設定します。 |
 
 ---
 
 ## PF_OutFlags2
 
-We added a second set of outflags in After Effects 5.0; partly for room to expand in the future, and partly to break ourselves of the bad habit of repurposing existing flags.
+`PF_OutFlags2` は After Effects 5.0 で追加された拡張フラグ群です。  
+`PF_OutFlags` と同様に、変更時はソースコードと [PiPL](../intro/pipl-resources) を揃えて更新してください。
 
-As with `PF_OutFlags`, many of these flags can be changed during an After Effects session.
-
-And don't forget to update both the [PiPL](../intro/pipl-resources) and your source code when you make a change.
-
-| Flag | Indicates |
+| フラグ | 意味 |
 | --- | --- |
-| `PF_OutFlag2_NONE` | Nothing. |
-| `PF_OutFlag2_SUPPORTS_QUERY_DYNAMIC_FLAGS` | The effect responds to [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging). Must be set in the PiPL and during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors). |
-| `PF_OutFlag2_I_USE_3D_CAMERA` | The effect accesses 3D camera information. |
-| `PF_OutFlag2_I_USE_3D_LIGHTS` | The effect accesses 3D lighting information. |
-| `PF_OutFlag2_PARAM_GROUP_START_COLLAPSED_FLAG` | This flag in itself doesn't control the state of the param group twirlies.<br /><br />The initial collapse state of each individual parameter group is set during [PF_Cmd_PARAM_SETUP](command-selectors#global-selectors), by setting the [PF_ParamFlag_START_COLLAPSED](PF_ParamDef#parameter-flags) flag in [PF_ParamFlags](PF_ParamDef#parameter-flags), but those individual settings will not be honored unless the effect sets this bit.<br /><br />Otherwise, all parameter groups will be collapsed by default.<br /><br />Remember to set this flag in both the PiPL and here during [PF_Cmd_GLOBAL_SETUP.](command-selectors#global-selectors) |
-| `PF_OutFlag2_I_AM_THREADSAFE` | Currently this does nothing. If this sounds interesting to you, you may be interested in `PF_OutFlag2_PPRO_DO_NOT_CLONE_SEQUENCE_DATA_FOR_RENDER`, described below. |
-| `PF_OutFlag2_CAN_COMBINE_WITH_DESTINATION` | Originally added for Premiere usage, but no longer used. |
-| `PF_OutFlag2_DOESNT_NEED_EMPTY_PIXELS` | Added for render optimizations; shrinks the input buffer passed to the effect to exclude any empty pixels (where empty means "zero alpha" unless `PF_OutFlag2_REVEALS_ZERO_ALPHA` is set, in which case RGB must be zero as well).<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) or [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging).<br /><br />The origin of the trimmed buffer can be found in `in_data>pre_effect_source_origin`.<br /><br />Effects with both this flag and `PF_OutFlag_I_EXPAND_BUFFER` set may get called with a null input buffer if their input is completely empty, and must be able to handle this case without crashing.<br /><br />!!! note<br />this flag can cause the size of the output buffer to change.<br /><br />!!! note<br />Obsolete for SmartFX. |
-| `PF_OutFlag2_REVEALS_ZERO_ALPHA` | This is the one flag implementors need to pay most attention to since it represents a change in the default behavior.<br /><br />Set this flag if the effect can take pixels with zero alpha and reveal the RGB data in them (like our Set Channels effect).<br /><br />This tells After Effects not to trim such pixels when determining the input for the effect.<br /><br />This flag can be changed during [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging).<br /><br />Note that, while this flag can cause changes to the size of the `extent_hint`, it will not change the image buffer size.<br /><br />As of 6.0, pixels outside the mask's bounding box are zeroed.<br /><br />If your effect can reveal such pixels, tell AE not to throw away these RGB values by setting this flag.<br /><br />If your effect does not always reveal such pixels, set this bit dynamically.<br /><br />To see if your effect needs this bit set, apply a mask significantly smaller than the layer to a solid, then apply the effect and set it to its alpha-modifying state.<br /><br />If the rectangular bounding box of the mask becomes visible, this bit needs to be set. |
-| `PF_OutFlag2_PRESERVES_FULLY_OPAQUE_PIXELS` | Preserve those pixels! |
-| `PF_OutFlag2_SUPPORTS_SMART_RENDER` | The effect uses the SmartFX API. |
-| `PF_OutFlag2_FLOAT_COLOR_AWARE` | The effect supports 32-bpc floating point color representation.<br /><br />!!! note<br />`PF_OutFlag2_SUPPORTS_SMART_RENDER` must also be set. |
-| `PF_OutFlag2_I_USE_COLORSPACE_ENUMERATION` | This is for effects which optimized for different color spaces in Premiere Pro. See the Premiere Pro SDK for more details. |
-| `PF_OutFlag2_I_AM_DEPRECATED` | Setting this during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) puts the effect in the localized "Obsolete" folder in the Effects panel.<br /><br />Compare to `PF_OutFlag_I_AM_OBSOLETE`. |
-| `PF_OutFlag2_PPRO_DO_NOT_CLONE_SEQUENCE_DATA_FOR_RENDER` | Supported in Premiere Pro, and not in After Effects.<br /><br />This affects how Premiere Pro drives the plug-in using [Multithreading](../ppro/multithreading). |
-| `PF_OutFlag2_AUTOMATIC_WIDE_TIME_INPUT` | Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />Requires setting of `PF_OutFlag_WIDE_TIME_INPUT` (which allows you to support old hosts), but effectively overrides that flag.<br /><br />When set, all parameter checkouts are tracked so over-time dependencies are known by the host, and much more efficient.<br /><br />For example, if you set only the old `PF_OutFlag_WIDE_TIME_INPUT`, anytime anything changes at any time upstream from your effect, you will be called to re-render.<br /><br />With this flag set, if a given frame 17 has checked out things from times 0-17, AE will know that any changes at frames 18+ will not affect that cached frame.<br /><br />Note that if you use this new flag, you must not cache any time-dependent data in your sequence data (or anywhere else), unless you also [validate that cache](../effect-details/global-sequence-frame-data#validating-sequence-data) using `PF_GetCurrentState()` / `PF_AreStatesIdentical()` from [PF_ParamUtilSuite3](../effect-details/parameter-supervision#pf_paramutilsuite3) before using the time-dependent data.<br /><br />This only works for SmartFX (those that set `PF_OutFlag2_SUPPORTS_SMART_RENDER`).<br /><br />If you haven't set that, After Effects will silently treat this as `PF_OutFlag_WIDE_TIME_INPUT` instead. |
-| `PF_OutFlag2_I_USE_COMP_TIMECODE` | Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors).<br /><br />This lets AE know it should rerender an effect if the composition start time and/ or drop-frame setting has been modified. |
-| `PF_OutFlag2_DEPENDS_ON_UNREFERENCED_MASKS` | New in CS6. Set this if you are going to look at paths that aren't directly referenced by a path param, e.g. if you are going to draw a stroke on all masks.<br /><br />This is needed so After Effects knows to invalidate your output when a mask is modified that doesn't appear to be referenced by your effect.<br /><br />Set during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) or [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging). |
-| `PF_OutFlag2_OUTPUT_IS_WATERMARKED` | New in CS6. Set this during [PF_Cmd_GLOBAL_SETUP](command-selectors#global-selectors) if your output is going to be watermarked in some way that makes it unsuitable for final use, probably because the user is using an unlicensed demo version.<br /><br />It is ok to change this state during the course of app session during [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging), if e.g. a floating license status changes.<br /><br />Plug-in authors that actually do have this state changing asynchronously must be careful to have the next render match the last state returned from [PF_Cmd_QUERY_DYNAMIC_FLAGS](command-selectors#messaging) otherwise race conditions could cause incorrect frames to be cached.<br /><br />(This is a non-issue if you only change this in response to `DO_DIALOG`.) |
-| `PF_OutFlag2_SUPPORTS_GPU_RENDER_F32` | New in 16.0 Set during PF_Cmd_GLOBAL_SETUP, this indicates GPU support.<br /><br />The effect will be called with GPU selectors, and will be badged as GPU-supporting in the GUI.<br /><br />At `PF_Cmd_GPU_DEVICE_SETUP` time, these flags indicate rendering capabilities for a specific device and framework. |
-| `PF_OutFlag2_SUPPORTS_THREADED_RENDERING` | Available in After Effects Beta builds starting June 2020, After Effects 2022.<br /><br />Set during `PF_Cmd_GLOBAL_SETUP`, this indicates the effect supports rendering on multiple threads at the same time. Single or multiple applications of this effect on a layer can be called to render at the same time on multiple threads.<br /><br />This flag indicates the effect supports rendering on multiple threads at the same time. Single or multiple applications of this effect on a layer can be called to render at the same time on multiple threads.<br /><br />If you are using the `PF_OutFlag_SEQUENCE_DATA_NEEDS_FLATTENING` flag, remember to also set the `PF_OutFlag2_SUPPORTS_GET_FLATTENED_SEQUENCE_DATA` flag. See [Sequence Data in Multi-Frame rendering](../effect-details/multi-frame-rendering-in-ae#sequence-data-in-multi-frame-rendering) for more information.<br /><br />!!! note<br />This flag should only be set on plugins that have been tested to be thread-safe with multi-frame rendering enabled in AE.<br /><br />For more information on how to use this flag, please see [Multi-Frame Rendering in AE](../effect-details/multi-frame-rendering-in-ae) under Effect Details. |
-| `PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER` | Available in After Effects Beta builds starting March 2021, After Effects 2022.<br /><br />Indicates the effect needs sequence_data replicated for each render thread, thus allowing each render to have sequence_data which can be written to. Note that changes to sequence_data will be discarded regularly, currently after each span of frames is rendered such as single RAM Preview or Render Queue export.<br /><br />!!! note<br />This flag should only be set on plugins that have been tested to be thread-safe with multi-frame rendering enabled in AE.<br /><br />For more information on how to use this flag, please see [Multi-Frame Rendering in AE](../effect-details/multi-frame-rendering-in-ae) under Effect Details. |
+| `PF_OutFlag2_NONE` | 追加フラグなしです。 |
+| `PF_OutFlag2_SUPPORTS_QUERY_DYNAMIC_FLAGS` | `PF_Cmd_QUERY_DYNAMIC_FLAGS` に応答することを示します。PiPL と `GLOBAL_SETUP` の両方で設定が必要です。 |
+| `PF_OutFlag2_I_USE_3D_CAMERA` | 3D カメラ情報を参照することを示します。 |
+| `PF_OutFlag2_I_USE_3D_LIGHTS` | 3D ライト情報を参照することを示します。 |
+| `PF_OutFlag2_PARAM_GROUP_START_COLLAPSED_FLAG` | `PF_ParamFlag_START_COLLAPSED` の指定を有効化します。未設定時はパラメータグループが既定で折りたたまれます。 |
+| `PF_OutFlag2_I_AM_THREADSAFE` | 現状、After Effects では実質未使用です。 |
+| `PF_OutFlag2_CAN_COMBINE_WITH_DESTINATION` | 旧 Premiere 用で、現在は未使用です。 |
+| `PF_OutFlag2_DOESNT_NEED_EMPTY_PIXELS` | 入力の空画素領域をトリムして渡してよいことを示します。入力が完全に空の場合、ヌル入力でも安全に動作できる実装が必要です。SmartFX では旧方式です。 |
+| `PF_OutFlag2_REVEALS_ZERO_ALPHA` | アルファ 0 画素の RGB を露出させる可能性があることを示します。既定動作に影響する重要フラグで、必要に応じて `QUERY_DYNAMIC_FLAGS` で動的制御します。 |
+| `PF_OutFlag2_PRESERVES_FULLY_OPAQUE_PIXELS` | 完全不透明画素を保持する性質を示します。 |
+| `PF_OutFlag2_SUPPORTS_SMART_RENDER` | SmartFX API（`SMART_PRE_RENDER` / `SMART_RENDER`）に対応していることを示します。 |
+| `PF_OutFlag2_FLOAT_COLOR_AWARE` | 32 bpc 浮動小数点カラーに対応します。`PF_OutFlag2_SUPPORTS_SMART_RENDER` も必須です。 |
+| `PF_OutFlag2_I_USE_COLORSPACE_ENUMERATION` | Premiere Pro で色空間別最適化を行うエフェクト向けです。 |
+| `PF_OutFlag2_I_AM_DEPRECATED` | エフェクトを Effects パネルの「Obsolete」フォルダへ移動します。`PF_OutFlag_I_AM_OBSOLETE` と用途が近いフラグです。 |
+| `PF_OutFlag2_PPRO_DO_NOT_CLONE_SEQUENCE_DATA_FOR_RENDER` | Premiere Pro 専用フラグです（After Effects では未対応）。 |
+| `PF_OutFlag2_AUTOMATIC_WIDE_TIME_INPUT` | `WIDE_TIME_INPUT` の高効率版です。時刻依存のチェックアウト追跡をホスト側で自動化します。SmartFX 対応が前提で、時刻依存キャッシュを使う場合は状態検証（`PF_GetCurrentState()` など）が必要です。 |
+| `PF_OutFlag2_I_USE_COMP_TIMECODE` | コンポ開始時刻やドロップフレーム設定変更で再レンダリングが必要なことを示します。 |
+| `PF_OutFlag2_DEPENDS_ON_UNREFERENCED_MASKS` | パラメータで直接参照していないマスクにも依存する場合に設定します。 |
+| `PF_OutFlag2_OUTPUT_IS_WATERMARKED` | 出力がウォーターマーク付きで最終利用に不適切であることを示します（例: 未ライセンス版）。必要に応じて動的変更可能です。 |
+| `PF_OutFlag2_SUPPORTS_GPU_RENDER_F32` | GPU レンダリング対応（F32）を示します。`PF_Cmd_GPU_DEVICE_SETUP` でデバイスごとの能力を返します。 |
+| `PF_OutFlag2_SUPPORTS_THREADED_RENDERING` | マルチフレームレンダリングで同時マルチスレッド実行に対応することを示します。スレッドセーフ検証済みプラグインのみ設定してください。詳細は [Multi-Frame Rendering in AE](../effect-details/multi-frame-rendering-in-ae) を参照してください。 |
+| `PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER` | レンダースレッドごとに書き込み可能な `sequence_data` 複製が必要な場合に設定します。速度低下要因になるため必要時のみ使用してください。詳細は [Multi-Frame Rendering in AE](../effect-details/multi-frame-rendering-in-ae) を参照してください。 |

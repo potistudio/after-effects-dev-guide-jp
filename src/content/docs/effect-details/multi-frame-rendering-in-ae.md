@@ -10,7 +10,9 @@ PF_OutFlag2_SUPPORTS_THREADED_RENDERING
 ```
 このフラグは、エフェクトが複数のスレッドでの同時レンダリングをサポートしていることを示します。レイヤー上のこのエフェクトの単一または複数のアプリケーションを呼び出して、複数のスレッドで同時にレンダリングできます。このフラグを設定する前に、エフェクトはスレッドセーフである必要があります。詳細については、以下の [What does it mean for an effect to be thread-safe?](#what-does-it-mean-for-an-effect-to-be-thread-safe) セクションを参照してください。
 
-:::note
+:::no
+t
+e
 After Effects でマルチフレーム レンダリングを使用する場合、スレッドセーフではなく、このフラグが設定されていないエフェクトでは、各レンダースレッドが一度に 1 スレッドずつエフェクト コードに出入りすることが強制されます。これにより、MFR によるパフォーマンスの向上が大幅に低下するため、エフェクトの横に警告アイコンがエフェクト コントロール ウィンドウに表示され、パフォーマンスへの影響をユーザーに警告します。
 
 :::
@@ -23,7 +25,9 @@ PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER
 ```
 各レンダリングスレッドには、他のレンダリングスレッドと共有も同期もされない独自の sequence_data インスタンスがあります。 sequence_data に格納されたデータの計算に時間がかかる場合は、新しい [Compute Cache For Multi-Frame Rendering](#compute-cache-for-multi-frame-rendering) を使用する必要があります。
 
-:::note
+:::no
+t
+e
 `PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER` フラグを使用するには、2021 年 3 月以降の SDK に対してコンパイルする必要があります。
 
 :::
@@ -42,7 +46,9 @@ PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER
 | Plugin sets PF_OutFlag2_SUPPORTS_THREADED_RENDERING but only reads sequence_data during Render | Recompile the plugin with the March 2021 SDK, update reading sequence_data via `PF_EffectSequenceDataSuite1` for thread-safe access. See [Accessing sequence_data at Render Time with Multi-Frame Rendering](global-sequence-frame-data#accessing-sequence_data-at-render-time-with-multi-frame-rendering) for more information. |
 | Plugin sets PF_OutFlag2_SUPPORTS_THREADED_RENDERING and reads and writes to sequence_data during Render | Recompile the plugin with the March 2021 SDK and modify the plugin to:<br /><br />1. Utilize the [Compute Cache API](compute-cache-api#compute-cache-api) for thread-safe cache access instead of reading/writing to sequence_data directly.  See [Compute Cache For Multi-Frame Rendering](#compute-cache-for-multi-frame-rendering) for more information. AND / OR<br />2. Add the `PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER` to the effect to restore direct read/write access to sequence_data. |
 
-:::note
+:::no
+t
+e
 2021 年 3 月の SDK でコンパイルされ、PF_OutFlag2_SUPPORTS_THREADED_RENDERING フラグと、オプションで PF_OutFlag2_MUTABLE_RENDER_SEQUENCE_DATA_SLOWER フラグを使用してコンパイルされたエフェクトは、`PF_EffectSequenceDataSuite1` が導入された 18.0 以降の After Effects ベータビルドで動作します。両方の sequence_data 動作をサポートする必要がある場合は、このスイートの存在を確認してください。
 
 :::
@@ -64,7 +70,9 @@ UI セレクターは引き続きメイン スレッドで送信されますが�
 
 * マルチフレーム レンダリングでは、After Effects が `sequence_data` をレンダリングスレッドにマーシャリングする必要があります。 `PF_OutFlag_SEQUENCE_DATA_NEEDS_FLATTENING` フラグによるフラット化を必要とする `sequence_data` のエフェクトでこれを効率的にするには、これらのエフェクトでも `PF_OutFlag2_SUPPORTS_GET_FLATTENED_SEQUENCE_DATA` フラグを設定する必要があります。
 
-:::note
+:::no
+t
+e
 After Effects の将来のバージョンでは、`PF_OutFlag2_SUPPORTS_GET_FLATTENED_SEQUENCE_DATA` フラグを設定し、プラグインで関連するセレクターを処理することが必須になる予定です。この要件を満たさないエフェクトを読み込むと、警告ダイアログが表示されます。
 
 :::
@@ -103,7 +111,9 @@ Compute Cache API は 2021 年 3 月の SDK から利用可能になり、この
 2. レンダリング時に `in_data->global_data` に書き込みません。読書は可能です。 `PF_Cmd_GLOBAL_SETUP`と`PF_Cmd_GLOBAL_SETDOWN`のみを記入してください。
 3. レンダリング時または `PF_Cmd_UPDATE_PARAMS_UI` イベント中に `in_data->sequence_data` に書き込みません。読み取りは、PF_EffectSequenceDataSuite インターフェイスを介して実行できます。
 
-:::note
+:::no
+t
+e
 エフェクトがミューテックスやゲートなどのブロッキング同期メカニズムを使用している場合、ホストにコールバックするときにこれらを保持してはなりません。一般的な通話は、スイートを使用するとき、またはチェックアウトの通話を行うときです。これを行わないと、デッドロックが発生する可能性が非常に高くなります。
 
 :::
@@ -370,7 +380,9 @@ void UseState() {
     DoComputation(state_capture);
 }
 ```
-:::note
+:::no
+t
+e
 上記の例は、エフェクトで確認された一般的なケースです。ニーズに最適な静的変数とグローバル変数を処理するための他の方法をいつでも思いつくことができます。
 
 :::

@@ -7,44 +7,51 @@ title: 'Artisanデータ型'
 
 ## Artisan API で使用されるデータ型
 
-| Type | Describes |
+| 型 | 説明 |
 | --- | --- |
-| `AEGP_RenderLayerContextH` | State information at the time of a render request, sent to an Artisan by After Effects. |
-| `PR_RenderContextH` | A collection of settings defining what is to be rendered, and how. |
-| `AEGP_SoundDataH` | The audio settings used for a given layer. |
-| `AEGP_RenderReceiptH`<br />`AEGP_FrameReceiptH` | Used by Artisans when rendering. |
-| `AEGP_WorldH` | A frame of pixels. |
-| `AEGP_RenderOptionsH` | The settings associated with a render queue item. |
+| `AEGP_RenderLayerContextH` | レンダー要求時点のレイヤー状態情報です。After Effects から Artisan へ渡されます。 |
+| `PR_RenderContextH` | 何をどの条件でレンダリングするかを定義する設定集合です。 |
+| `AEGP_SoundDataH` | 対象レイヤーのオーディオ設定です。 |
+| `AEGP_RenderReceiptH`<br />`AEGP_FrameReceiptH` | Artisan レンダリング時の受領情報（キャッシュ判定など）です。 |
+| `AEGP_WorldH` | 1 フレーム分のピクセルバッファです。 |
+| `AEGP_RenderOptionsH` | レンダーキュー項目に紐づくレンダー設定です。 |
 
 ---
 
-## Horz? Vert?
+## 行列の向き（Horz / Vert）
 
-After Effects' matrix is row based; OpenGL's is column based. This means more work for you. Yay, billable hours!
-
----
-
-## Implementation And Design
-
-An Artisan is nearly an application unto itself. Because we realized early in the After Effects 5.0 that there are many ways to approach the problems inherent in 3D rendering; intersections and shading, for example.
-
-We provided an API with which we and third parties (yes, we really do use our own APIs) could implement any 3D rendering scheme desired.
+After Effects の行列は行優先（row-based）、OpenGL は列優先（column-based）です。  
+座標変換を扱う際は、この差分を吸収する実装が必要です。
 
 ---
 
-## 3D Compositing, Not Modeling
+## 実装設計の前提
 
-After Effects is *not* a 3D modeling application. Users work in a responsive mode, switching to higher quality only at for proofing or final output. Consider providing at least two quality modes, one for layout and another for final output. Be conscious of render time in low quality mode.
+Artisan は「AEGP の 1 機能」というより、小さなレンダラー実装そのものに近い存在です。  
+交差判定やシェーディングなど、3D レンダリング問題には複数の設計アプローチがあります。
+
+この API は、Adobe 本体とサードパーティの双方が任意の 3D レンダリング方式を実装できるよう設計されています。
 
 ---
 
-## Registering An Artisan
+## 3D 合成であり、3D モデリングではない
 
-An Artisan is an AEGP, and has a single entry point. Artisans must also register their own function entry points and have a special callback for this purpose. See `AEGP_RegisterArtisan()` from [AEGP_RegisterSuite5](../aegps/aegp-suites#aegp_registersuite5).
+After Effects は *3D モデラー* ではありません。  
+ユーザーは通常、操作中は軽い品質で作業し、確認時や最終出力時のみ高品質に切り替えます。
 
-This tables shows the functions that Artisans can support as defined by `PR_ArtisanEntryPoints`: only `render_func` is required.
+Artisan 実装では少なくとも 2 つの品質モード（レイアウト用 / 最終出力用）を用意し、低品質時の応答性を重視してください。
 
-### Artisan Entry Points
+---
+
+## Artisan の登録
+
+Artisan は AEGP の一種で、単一のエントリポイントを持ちます。  
+加えて、Artisan 固有の各関数エントリポイントを登録する必要があります。  
+詳細は [AEGP_RegisterSuite5 の `AEGP_RegisterArtisan()`](../aegps/aegp-suites#aegp_registersuite5) を参照してください。
+
+次の表は `PR_ArtisanEntryPoints` で定義される Artisan の実装関数です。必須なのは `render_func` のみです。
+
+### Artisan エントリポイント
 
 | PR_ArtisanEntryPoints |   |
 | --- | --- |
@@ -62,7 +69,7 @@ This tables shows the functions that Artisans can support as defined by `PR_Arti
 
 ---
 
-## The World Is Your Canvas
+## レンダー対象レイヤーの取得と描画
 
 `AEGP_RenderTexture()` supplies the raw pixels of a layer, untransformed, into an arbitrarily-sized buffer.
 
@@ -115,10 +122,10 @@ The following suite supplies the layers, compositions, texture and destination b
 | `AEGP_GetBinType` | Retrieves the type of the given bin.<br /><br /><pre lang="cpp">AEGP_GetBinType(<br/>  const PR_RenderContextH  contextH,<br/>  AEGP_BinType             \*bin_typeP);</pre><br /><br />`AEGP_BinType` will be one of the following:<br /><br />- `AEGP_BinType_NONE`<br />- `AEGP_BinType_2D`<br />- `AEGP_BinType_3D` |
 | `AEGP_GetRenderLayerToWorldXform2D3D` | Retrieves the transform to correctly orient the layer being rendered with the output world.<br /><br />Pass `TRUE` for `only_2dB` to constrain the transform to two dimensions.<br /><br /><pre lang="cpp">AEGP_GetRenderLayerToWorldXform2D3D(<br/>  PR_RenderContextH         render_contextH,<br/>  AEGP_RenderLayerContextH  layer_contextH,<br/>  const A_Time              \*comp_timeP,<br/>  A_Boolean                 only_2dB,<br/>  A_Matrix4                 \*transformP);</pre> |
 
-@@PH0@@
-Functions below are for interactive artisans only.
+:::note
+以下の関数はインタラクティブ Artisan 専用です。
+:::
 
-@@PH1@@
 | Function | Purpose |
 | --- | --- |
 | `AEGP_GetPlatformWindowRef` | Retrieves the platform-specific window context into which to draw the given `PR_RenderContextH`.<br /><br /><pre lang="cpp">AEGP_GetPlatformWindowRef(<br/>  const PR_RenderContextH  contextH,<br/>  AEGP_PlatformWindowRef   \*window_refP);</pre> |
@@ -139,7 +146,7 @@ Functions below are for interactive artisans only.
 
 ---
 
-## Convert Between Different Contexts
+## コンテキスト間の変換
 
 Convert between render and instance contexts, and manage global data specific to the artisan.
 
@@ -156,7 +163,7 @@ Convert between render and instance contexts, and manage global data specific to
 
 ---
 
-## Smile! Cameras
+## カメラ情報
 
 Obtains the camera geometry, including camera properties (type, lens, depth of field, focal distance, aperture, et cetera).
 
@@ -222,7 +229,7 @@ Tan(ϴ) = 1/2 構図の高さ / 焦点距離
 | `AEGP_GetLightType` | Retrieves the `AEGP_LightType` of the specified camera layer.<br /><br /><pre lang="cpp">AEGP_GetLightType(<br/>  AEGP_LayerH     light_layerH,<br/>  AEGP_LightType  \*light_typeP);</pre><br /><br />`AEGP_LightType` will be one of the following:<br /><br />- `AEGP_LightType_PARALLEL`<br />- `AEGP_LightType_SPOT`<br />- `AEGP_LightType_POINT`<br />- `AEGP_LightType_AMBIENT` |
 | `AEGP_SetLightType` | Sets the `AEGP_LightType` for the specified camera layer.<br /><br /><pre lang="cpp">AEGP_SetLightType(<br/>  AEGP_LayerH     light_layerH,<br/>  AEGP_LightType  light_type);</pre> |
 
-### Notes On Light Behavior
+### ライト挙動の注意点
 
 The formula for parallel lights is found in Foley and Van Dam's "Introduction to Computer Graphics" (ISBN 0-201-60921-5) as is the formula for point lights.
 
@@ -238,7 +245,7 @@ The amount of specular reflected light is S \* power(H Dot N, shine), where S is
 
 ---
 
-## How Should I Draw That?
+## 3D ハンドル描画
 
 After Effects relies upon Artisans to draw 3D layer handles. If your Artisan chooses not to respond to this call, the default Artisan will draw 3D layer handles for you. Querying transforms is important for optimization of After Effects' caching.
 
@@ -246,7 +253,7 @@ The coordinate system is positive x to right, positive y down, positive z into t
 
 ---
 
-## Query Transform Functions
+## 変換クエリ関数
 
 These functions give artisans information about the transforms they'll need in order to correctly place layers within a composition and respond appropriately to the various queries After Effects will send to their `PR_QueryFunc` entry point function.
 
@@ -275,7 +282,7 @@ As that entry point is optional, so is your artisan's response to the queries; h
 
 ---
 
-## Interactive Drawing Functions
+## インタラクティブ描画関数
 
 We've added the ability for artisans to provide functions After Effects can use to do basic drawing functions for updating the comp window display during preview, including camera, light, and wireframe preview modeling.
 

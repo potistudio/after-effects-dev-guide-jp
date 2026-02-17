@@ -7,7 +7,7 @@ AEGP は、PICA 関数スイートを通じて After Effects と対話します�
 
 AEGP は特定の順序でロードされるわけではありません。
 
-AEGP API のバージョンを (AEGP のエントリ ポイント関数内から) チェックして、特定のスイートが利用可能かどうかを確認します。
+AEGP API のバージョンを (AEGP のエントリポイント関数内から) チェックして、特定のスイートが利用可能かどうかを確認します。
 
 AEGP は、PF_ProgPtr (PF_InData からのエフェクトによって取得される) を必要としないエフェクト API スイート関数を使用することもできます。
 
@@ -23,11 +23,11 @@ A_Err AEGP_PluginInitFuncPrototype(
     AEGP_PluginID        aegp_plugin_id,
     AEGP_GlobalRefcon    *global_refconP)
 ```
-[PiPL Resources](../intro/pipl-resources) でエクスポートされたプラグインのエントリ ポイントは、起動時に 1 回だけ呼び出されます。 AEGP への他のすべての呼び出しは、登録されている関数に送られます。
+[PiPL Resources](../intro/pipl-resources) でエクスポートされたプラグインのエントリポイントは、起動時に 1 回だけ呼び出されます。 AEGP への他のすべての呼び出しは、登録されている関数に送られます。
 
-これは、すべての通信が同じエントリ ポイントを経由するエフェクトプラグイン モデルとは大きく異なります。
+これは、すべての通信が同じエントリポイントを経由するエフェクトプラグイン モデルとは大きく異なります。
 
-プラグインのロード順序は異なる場合があるため、エントリ ポイント機能中に After Effects によって提供されていないスイートを取得することは決して得策ではありません。むしろ、適切なフック機能が実行されるまで待機してください。
+プラグインのロード順序は異なる場合があるため、エントリポイント機能中に After Effects によって提供されていないスイートを取得することは決して得策ではありません。むしろ、適切なフック機能が実行されるまで待機してください。
 
 AEGP [API Versions](../intro/compatibility-across-multiple-versions#api-versions) は、AEGP が異なる動作をする必要がある場合、または異なる動作を処理する必要がある場合に、After Effects の異なるバージョンを区別するのに役立ちます。
 
@@ -45,7 +45,7 @@ AEGP API の他のすべてと同様、これは関数スイートを通じて�
 
 ## 例: メニュー項目の追加
 
-エントリ ポイント関数中に、[Command Suite](aegp-suites#aegp_commandsuite1) から `AEGP_GetUniqueCommand()` を使用して、`AEGP_InsertMenuCommand` で使用するコマンド ID を After Effects から取得します。追加するメニュー項目ごとに異なる ID を使用します。
+エントリポイント関数中に、[Command Suite](aegp-suites#aegp_commandsuite1) から `AEGP_GetUniqueCommand()` を使用して、`AEGP_InsertMenuCommand` で使用するコマンド ID を After Effects から取得します。追加するメニュー項目ごとに異なる ID を使用します。
 
 AEGP_RegisterSuite の `AEGP_RegisterCommandHook()` を使用して、メニュー項目が選択されたときに呼び出す関数を After Effects に指示します。 `AEGP_RegisterUpdateMenuHook()` を使用して登録した機能により、メニュー項目が有効または無効になります。メニュー更新機能を登録しない限り、メニュー項目は永久に無効になります。
 

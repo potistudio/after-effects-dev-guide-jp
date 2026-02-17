@@ -27,7 +27,7 @@ MediaCore インポーター プラグインのみがインポーター優先順
 
 ## 仕組み
 
-AEIO は、エントリ ポイント関数内から、特定のイベントに応答して呼び出される関数の名前を関数ポインタの構造に設定します。。これらの関数フックの多くはオプションです。
+AEIO は、エントリポイント関数内から、特定のイベントに応答して呼び出される関数の名前を関数ポインタの構造に設定します。。これらの関数フックの多くはオプションです。
 
 ---
 
@@ -43,7 +43,7 @@ AEIO は、エントリ ポイント関数内から、特定のイベントに�
 
 ## AEIO の登録
 
-プラグインのエントリ ポイント関数中に、AEIO がサポートするファイル タイプを記述する AEIO_ModuleInfo と、ファイル処理関数を指す AEIO_FunctionBlock 構造体を設定します。これらの関数の一部では、AEIO_Err_USE_DFLT_CALLBACK を返すことで After Effects のデフォルトの動作に依存できます。ただし、必要な署名に一致する関数を提供する必要があります。これらの構造を両方とも入力したら、[AEGP_RegisterSuite5](../aegps/aegp-suites#aegp_registersuite5) から `AEGP_RegisterIO()` を呼び出します。
+プラグインのエントリポイント関数中に、AEIO がサポートするファイル タイプを記述する AEIO_ModuleInfo と、ファイル処理関数を指す AEIO_FunctionBlock 構造体を設定します。これらの関数の一部では、AEIO_Err_USE_DFLT_CALLBACK を返すことで After Effects のデフォルトの動作に依存できます。ただし、必要な署名に一致する関数を提供する必要があります。これらの構造を両方とも入力したら、[AEGP_RegisterSuite5](../aegps/aegp-suites#aegp_registersuite5) から `AEGP_RegisterIO()` を呼び出します。
 
 レジスタ呼び出しに渡す AEIO_ModuleInfo では、After Effects がインポートダイアログ、Windows の「ファイルの種類」ドロップダウン、または macOS の有効ドロップダウンで使用するファイルタイプと説明情報を指定します。 CS6 では、より長い拡張子を持つ組み込みインポーターがいくつかありますが、ファイル拡張子は 3 文字を超えることはできません。
 

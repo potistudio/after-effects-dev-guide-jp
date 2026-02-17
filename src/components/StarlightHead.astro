@@ -1,27 +1,248 @@
 ---
 import DefaultHead from '@astrojs/starlight/components/Head.astro';
+import { ClientRouter } from 'astro:transitions';
 ---
 
 <DefaultHead />
+<ClientRouter />
+
+<style is:global>
+	.sl-markdown-content .budoux-target {
+		word-break: keep-all;
+		overflow-wrap: anywhere;
+	}
+
+	#sl-nav-progress {
+		position: fixed;
+		inset: 0 auto auto 0;
+		z-index: 9999;
+		width: 100%;
+		height: 3px;
+		pointer-events: none;
+		opacity: 0;
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform 140ms linear, opacity 160ms ease;
+	}
+
+	#sl-nav-progress::after {
+		content: '';
+		display: block;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			90deg,
+			var(--sl-color-accent),
+			var(--sl-color-accent-high, var(--sl-color-white))
+		);
+	}
+
+	html.sl-nav-transitioning #sl-nav-progress {
+		opacity: 1;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#sl-nav-progress {
+			transition: none;
+		}
+	}
+</style>
 
 <script>
 	import { applyBudouxLineBreaks } from '../scripts/budoux-linebreak';
+
+	const NAV_PROGRESS_BAR_ID = 'sl-nav-progress';
+	const NAV_TRANSITIONING_CLASS = 'sl-nav-transitioning';
+	const SERVICE_WORKER_PATH = '/sw.js';
+	let navProgressBar;
+	let navProgressValue = 0;
+	let navProgressTimer = null;
+
+	const ensureNavProgressBar = () => {
+		if (navProgressBar) return navProgressBar;
+
+		const existing = document.getElementById(NAV_PROGRESS_BAR_ID);
+		if (existing) {
+			navProgressBar = existing;
+			return navProgressBar;
+		}
+
+		const created = document.createElement('div');
+		created.id = NAV_PROGRESS_BAR_ID;
+		(document.body || document.documentElement).appendChild(created);
+		navProgressBar = created;
+		return navProgressBar;
+	};
+
+	const setNavProgress = (nextValue) => {
+		const bar = ensureNavProgressBar();
+		bar.style.transform = `scaleX(${Math.max(0, Math.min(1, nextValue))})`;
+	};
+
+	const stopNavProgressTimer = () => {
+		if (navProgressTimer !== null) {
+			window.clearInterval(navProgressTimer);
+			navProgressTimer = null;
+		}
+	};
+
+	const resetNavProgress = () => {
+		stopNavProgressTimer();
+		navProgressValue = 0;
+		document.documentElement.classList.remove(NAV_TRANSITIONING_CLASS);
+		setNavProgress(0);
+		document.documentElement.dataset.navProgressActive = 'false';
+	};
+
+	const completeNavProgress = () => {
+		if (document.documentElement.dataset.navProgressActive !== 'true') return;
+
+		stopNavProgressTimer();
+		navProgressValue = 1;
+		setNavProgress(navProgressValue);
+
+		window.setTimeout(() => {
+			resetNavProgress();
+		}, 120);
+	};
+
+	const startNavProgress = () => {
+		if (document.documentElement.dataset.navProgressActive === 'true') return;
+
+		document.documentElement.dataset.navProgressActive = 'true';
+		document.documentElement.classList.add(NAV_TRANSITIONING_CLASS);
+
+		navProgressValue = 0.08;
+		setNavProgress(navProgressValue);
+		stopNavProgressTimer();
+
+		navProgressTimer = window.setInterval(() => {
+			navProgressValue = Math.min(0.9, navProgressValue + (1 - navProgressValue) * 0.14);
+			setNavProgress(navProgressValue);
+			if (navProgressValue >= 0.9) stopNavProgressTimer();
+		}, 100);
+	};
+
+	const isInternalPageNavigation = (link, event) => {
+		if (!link || !event) return false;
+		if (event.defaultPrevented) return false;
+		if (event.button !== 0) return false;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+		if (link.target && link.target !== '_self') return false;
+		if (link.hasAttribute('download')) return false;
+
+		const hrefAttr = link.getAttribute('href') || '';
+		if (
+			hrefAttr.startsWith('#') ||
+			hrefAttr.startsWith('mailto:') ||
+			hrefAttr.startsWith('tel:') ||
+			hrefAttr.startsWith('javascript:')
+		) {
+			return false;
+		}
+
+		let destination;
+		try {
+			destination = new URL(link.href, window.location.href);
+		} catch {
+			return false;
+		}
+
+		if (destination.origin !== window.location.origin) return false;
+
+		const isOnlyHashChange =
+			destination.pathname === window.location.pathname &&
+			destination.search === window.location.search &&
+			destination.hash.length > 0;
+
+		return !isOnlyHashChange;
+	};
+
+	const registerNavProgress = () => {
+		if (document.documentElement.dataset.navProgressListenerAttached === 'true') return;
+		document.documentElement.dataset.navProgressListenerAttached = 'true';
+
+		document.addEventListener(
+			'click',
+			(event) => {
+				const target = event.target;
+				if (!(target instanceof Element)) return;
+				const link = target.closest('a[href]');
+				if (!(link instanceof HTMLAnchorElement)) return;
+				if (!isInternalPageNavigation(link, event)) return;
+				startNavProgress();
+			},
+			{ capture: true, passive: true }
+		);
+
+		window.addEventListener('pageshow', () => {
+			completeNavProgress();
+		});
+
+		document.addEventListener('astro:page-load', () => {
+			completeNavProgress();
+		});
+	};
+
+	const registerNavigationCache = () => {
+		if (document.documentElement.dataset.navCacheWorkerRegistered === 'true') return;
+		document.documentElement.dataset.navCacheWorkerRegistered = 'true';
+
+		if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
+
+		const registerWorker = () => {
+			navigator.serviceWorker.register(SERVICE_WORKER_PATH).catch((error) => {
+				console.warn('Failed to register navigation cache worker.', error);
+			});
+		};
+
+		if (document.readyState === 'complete') {
+			registerWorker();
+		} else {
+			window.addEventListener('load', registerWorker, { once: true });
+		}
+	};
 
 	const runBudoux = () => {
 		void applyBudouxLineBreaks();
 	};
 
-	if (document.documentElement.dataset.budouxListenerAttached !== 'true') {
-		document.documentElement.dataset.budouxListenerAttached = 'true';
+	let idleHandle = null;
+	const scheduleBudoux = () => {
+		if (document.visibilityState === 'hidden') return;
 
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', runBudoux, { once: true });
-		} else {
-			runBudoux();
+		if ('requestIdleCallback' in window) {
+			if (idleHandle !== null && 'cancelIdleCallback' in window) {
+				window.cancelIdleCallback(idleHandle);
+			}
+			idleHandle = window.requestIdleCallback(
+				() => {
+					idleHandle = null;
+					runBudoux();
+				},
+				{ timeout: 1200 }
+			);
+			return;
 		}
 
-		document.addEventListener('astro:page-load', runBudoux);
+		window.setTimeout(runBudoux, 0);
+	};
+
+	if (document.documentElement.dataset.budouxListenerAttached !== 'true') {
+		document.documentElement.dataset.budouxListenerAttached = 'true';
+		registerNavProgress();
+		registerNavigationCache();
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', scheduleBudoux, { once: true });
+		} else {
+			scheduleBudoux();
+		}
+
+		document.addEventListener('astro:page-load', scheduleBudoux);
 	} else {
-		runBudoux();
+		registerNavProgress();
+		registerNavigationCache();
+		scheduleBudoux();
 	}
 </script>

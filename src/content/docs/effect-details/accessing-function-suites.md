@@ -1,5 +1,5 @@
 ---
-title: 'After EffectsのFunction Suiteへのアクセス'
+title: 'After Effects のFunction Suiteへのアクセス'
 ---
 C++ コードを作成している場合、スイートへのアクセスは AEFX_SuiteScoper を使用して行う必要があります。AEFX_SuiteScoper は、必要に応じてスイートを自動的に取得し、完了時にスイートを破棄します。
 
@@ -12,7 +12,9 @@ AEFX_SuiteScoper<PF_GPUDeviceSuite1> gpu_suite = AEFX_SuiteScoper<PF_GPUDeviceSu
     kPFGPUDeviceSuiteVersion1,
     out_dataP);
 ```
-:::note
+:::no
+t
+e
 AEFX_SuiteScoper は、要求されたスイートを取得できず、オプションの 2 番目のテンプレート引数 `ALLOW_NO_SUITE` が false に設定されている場合、例外 `A_Err_MISSING_SUITE` をスローします。
 
 `ALLOW_NO_SUITE` を `false` に設定する場合は、`AEFX_SuiteScoper<>` 呼び出しを try/catch ラッパーでラップしてください。
@@ -25,7 +27,7 @@ AEFX_SuiteScoper は、要求されたスイートを取得できず、オプシ
 ```cpp
 gpu_suite->GetDeviceInfo(in_dataP->effect_ref, extraP->input->device_index, &device_info);
 ```
-C コードを使用する必要がある場合は、チェックアウト サンプル プロジェクトで示されているように、`PF_Suite_Helper` ユーティリティ ファイルを使用してスイートを手動で取得およびリリースします。
+C コードを使用する必要がある場合は、チェックアウト サンプルプロジェクトで示されているように、`PF_Suite_Helper` ユーティリティ ファイルを使用してスイートを手動で取得およびリリースします。
 
 これらのメソッドは両方とも、バックグラウンドで、`PF_InData` が指す `SPBasicSuite` のメンバー関数である `AcquireSuite` を使用して PICA 関数スイートを取得します。
 

@@ -11,7 +11,9 @@ title: 'パラメータ監視'
 
 *PF_Cmd_UPDATE_PARAMS_UI* 中には、外観の変更とパラメータの状態の有効化のみが可能です。 [PF_ParamUtilSuite3](#pf_paramutilsuite3) の `PF_UpdateParamUI()` を使用して UI を更新し、変更するパラメータの *コピー* を渡します。オリジナルを変更しないでください。 `PF_OutFlag_REFRESH_UI` を設定する必要はありません。 `PF_UpdateParamUI()` がそれを処理します。
 
-:::note
+:::no
+t
+e
 これは、`PF_PUI_STD_CONTROL_ONLY` パラメータの UI を更新する唯一の方法です。
 
 :::

@@ -15,7 +15,7 @@ title: 'このSDKでできること'
 
 *After Effects 入出力 (AEIO) プラグイン* は、新しいメディア ファイル タイプをサポートします。解釈設定を指定するためのカスタム セットアップ ダイアログが必要でない限り、[Premiere Pro Importers](other-integration-possibilities#premiere-pro-importers) API は同様の機能を提供するため、多くの場合に推奨されます。 AEIO は、AEGP API と AEIO 固有の特定の API を使用します。 After Effects は引き続き Photoshop 形式のプラグインとフィルター、Foreign Project Format（FPF）プラグインをサポートしていますが、これらの API は長い間非推奨であり、AEIO API が優先されています。
 
-*BlitHook* プラグインは、ブロードキャスト品質のモニタリングとテープへの再生のためにビデオを外部ハードウェアに出力します。 EMP サンプル プロジェクトは開始点を提供します。 After Effects CC 2014 以降では、[Mercury Transmit](other-integration-possibilities#mercury-transmit) が推奨 API です。
+*BlitHook* プラグインは、ブロードキャスト品質のモニタリングとテープへの再生のためにビデオを外部ハードウェアに出力します。 EMP サンプルプロジェクトは開始点を提供します。 After Effects CC 2014 以降では、[Mercury Transmit](other-integration-possibilities#mercury-transmit) が推奨 API です。
 
 *Artisans* は、After Effects から 3D レンダリングを引き継ぎ、3D レイヤーのレンダリング出力を提供します (After Effects は引き続き 2D レイヤーのレンダリングをすべて処理します)。 Artisan は、Artisans に固有の特定の API とともに AEGP API を使用します。上で説明した必要な統合の種類が見つかりませんでしたか? After Effects は非常に柔軟であり、After Effects と統合する方法は他にもいくつかあります。 [Other Integration Possibilities](other-integration-possibilities) を参照してください。
 
@@ -45,7 +45,7 @@ C または C++ で書かれたプラグインは、macOS ではバンドル パ
 
 After Effects は、各シーケンスに固有の設定と入力データを使用して、エフェクトの複数のインスタンスを作成します。すべてのインスタンスは同じグローバル データを共有し、シーケンス内のすべてのフレーム間でデータを共有できます。。 After Effects は、ユーザーがエフェクトを適用するとすぐにすべての画像データを処理するわけではありません。出力が必要な場合にのみエフェクトを呼び出します。
 
-After Effects 汎用プラグイン（AEGP）は、アプリケーションの起動時に呼び出されるエントリ ポイント関数を持ち、その時点で必要なメッセージングを登録します。 AEGP へのさらなる呼び出しは、メニュー コマンドまたは UI イベントに対するプラグインの応答の一部として、ユーザー アクションによって開始されます。プラグインの機能によっては、UI 作業やスレッド管理のために、OS 固有のエントリ ポイントにも応答する必要がある場合があります。
+After Effects 汎用プラグイン（AEGP）は、アプリケーションの起動時に呼び出されるエントリポイント関数を持ち、その時点で必要なメッセージングを登録します。 AEGP へのさらなる呼び出しは、メニュー コマンドまたは UI イベントに対するプラグインの応答の一部として、ユーザー アクションによって開始されます。プラグインの機能によっては、UI 作業やスレッド管理のために、OS 固有のエントリポイントにも応答する必要がある場合があります。
 
 BlitHook プラグインの場合、フレームはコンポジションパネルに表示されるときにプッシュされます。ユーザーはタイムラインの領域で RAM プレビューを開始して、RAM にレンダリングし、すべてがフルスピードで再生されるようにすることができます。
 
@@ -53,6 +53,6 @@ BlitHook プラグインの場合、フレームはコンポジションパネ�
 
 ## SDK の内容
 
-SDK には、After Effects API を定義するヘッダー、統合機能を示すサンプル プロジェクト、およびこの SDK ガイドが含まれています。
+SDK には、After Effects API を定義するヘッダー、統合機能を示すサンプルプロジェクト、およびこの SDK ガイドが含まれています。
 
 これらは、プラグインで使用されるさまざまな After Effects 機能を公開する SDK ヘッダー ファイルでコンパイルされます。

@@ -1,72 +1,75 @@
 ---
 title: 'PF_EffectWorld / PF_LayerDef'
 ---
-After Effects は、PF_EffectWorlds（PF_LayerDefs とも呼ばれます）を使用してイメージを表します。
+After Effects は、画像バッファを `PF_EffectWorld`（別名 `PF_LayerDef`）で表現します。
 
 ---
 
 ## PF_EffectWorld 構造体
 
-| Item | Description |
+| 項目 | 説明 |
 | --- | --- |
-| `world_flags` | Currently, the only flags are:<br /><br />- `PF_WorldFlag_DEEP` - set if the world is 16-bpc<br />- `PF_WorldFlag_WRITEABLE` - indicates that you are allowed to alter the image data of the world.<br /><br />Normally effects cannot alter input image data; only output. |
-| `data` | Pointer to image data, stored as a `PF_PixelPtr`.<br /><br />Do not access directly; use the [PF_PixelPtr Accessor Macros](#pf_pixelptr-accessor-macros).<br /><br />Image data in After Effects is always organized in sequential words each containing Alpha, Red, Green, Blue from the low byte to the high byte. |
-| `rowbytes` | The length, in bytes, of each row in the image's block of pixels.<br /><br />The block of pixels contains height lines each with width pixels followed by some bytes of padding.<br /><br />The width pixels (times four, because each pixel is four bytes long) plus optional extra padding adds up to rowbytes bytes.<br /><br />Use this value to traverse the image data.<br /><br />Platform-specific padding at the end of rows makes it unwise to traverse the entire buffer.<br /><br />Instead, find the beginning of each row using height and rowbytes.<br /><br />!!! note<br />This value does not vary based on whether field rendering is active.<br /><br />!!! note<br />Input and output worlds with the same dimensions can use different rowbytes values. |
-| `width` | Width and height of the pixel buffer. |
-| `height` |   |
-| `extent_hint` | The smallest rectangle encompassing all opaque (non-zero alpha) pixels in the layer.<br /><br />This defines the area which needs to be output.<br /><br />If your plug-in varies with extent (like a diffusion dither), ignore this and render the full frame each time. |
-| `pix_aspect_ratio` | The pixel aspect ratio expressed as a `PF_Rational`.<br /><br />!!! note<br />Effects can use this value for checked out layers, but must use `PF_InData.pixel_aspect_ratio` for the layer to which they're applied. Sorry. |
-| `platform_ref` | No longer used in CS5.<br /><br />Platform-specific reference information.<br /><br />On Windows, this contains an opaque value.<br /><br />On macOS, `PF_GET_PLATFORM_REFS` provides a `CGrafPtr` and a `GDeviceHandle` from a `PF_EffectWorld`.<br /><br />!!! note<br />You cannot acquire a `platform_ref` during `PF_Cmd_GLOBAL_SETUP`, as there isn't any output context yet. Patience, my pet. |
-| `dephault` | For layer parameters only.<br /><br />Either `PF_LayerDefault_MYSELF` or `PF_LayerDefault_NONE`. |
+| `world_flags` | 代表的なフラグは次の 2 つです。<br /><br />- `PF_WorldFlag_DEEP`: 16 bpc バッファ<br />- `PF_WorldFlag_WRITEABLE`: このバッファへの書き込み許可あり<br /><br />通常、入力バッファの直接書き換えはできず、出力バッファへの書き込みが基本です。 |
+| `data` | 画像データ先頭へのポインタ（`PF_PixelPtr`）です。直接キャストせず、後述の [PF_PixelPtr Accessor Macros](#pf_pixelptr-accessor-macros) を使って取得してください。画素並びは低位バイトから `A, R, G, B` です。 |
+| `rowbytes` | 1 行あたりのバイト数です。行末パディングを含むため、`width * pixel_size` と一致するとは限りません。走査時は必ず `rowbytes` を使って行頭を計算してください。フィールドレンダリング有無には依存しません。同じ解像度でも入力と出力で値が異なる場合があります。 |
+| `width` | ピクセルバッファ幅です。 |
+| `height` | ピクセルバッファ高さです。 |
+| `extent_hint` | レイヤー内の非透明（alpha != 0）画素を囲む最小矩形です。必要出力範囲のヒントとして使います。 |
+| `pix_aspect_ratio` | `PF_Rational` で表されるピクセルアスペクト比です。チェックアウトした別レイヤーではこの値を使えますが、適用対象レイヤーでは `PF_InData.pixel_aspect_ratio` を参照してください。 |
+| `platform_ref` | プラットフォーム依存参照情報です。CS5 以降は基本的に未使用です。`PF_Cmd_GLOBAL_SETUP` では出力コンテキストがないため取得できません。 |
+| `dephault` | レイヤーパラメータ専用です。`PF_LayerDefault_MYSELF` または `PF_LayerDefault_NONE` を取ります。 |
 
 ---
 
-## New In 16.0
+## 16.0 以降（GPU Smart Render）
 
-During PF_Cmd_SMART_RENDER_GPU, PF_LayerDef will be filled out the same as it is for regular CPU renders, but PF_LayerDef.data will be null; all other fields will be valid.
-
----
-
-## Rowbytes In PF_EffectWorlds
-
-Don't assume that you can get to the next scanline of a `PF_EffectWorld` using `(width * sizeof(current_pixel_type)) + 4`, or whatever; use the PF_EffectWorld's `rowbytes` instead.
-
-Never write outside the indicated region of a PF_EffectWorld; this can corrupt cached image buffers that don't belong to you.
-
-To test whether your effects are honoring the `PF_EffectWorld>rowbytes`, apply the Grow Bounds effect *after* your effect.
-
-The output buffer will have larger rowbytes than the input (though it will still have the same logical size).
+`PF_Cmd_SMART_RENDER_GPU` では、`PF_LayerDef` は CPU レンダー時と同様に埋まります。  
+ただし `PF_LayerDef.data` は `NULL` で、他フィールドのみ有効です。
 
 ---
 
-## Byte Alignment
+## `rowbytes` の注意点
 
-The pixels in a `PF_EffectWorld` are not guaranteed to be 16-byte-aligned. An effect may get a subregion of a larger PF_EffectWorld. Users of Apple's sample code for pixel processing optimization, you have been warned.
+次の走査線へ進む際に `width * sizeof(pixel)` で計算してはいけません。  
+必ず `rowbytes` を使って行オフセットを求めてください。
 
-Beyond 8-bit per channel color, After Effects supports 16 bit and 32-bit float per-channel color.
+`PF_EffectWorld` の有効領域外へ書き込むと、他バッファやキャッシュ破壊につながります。
 
-Effects will never receive input and output worlds with differing bit depths, nor will they receive worlds with higher bit depth than they have claimed to be able to handle.
+`rowbytes` 対応を検証するには、対象エフェクトの後段に Grow Bounds を適用する方法が有効です。
+
+この状態では、論理解像度が同じでも出力側 `rowbytes` が入力より大きくなり、誤実装を検出しやすくなります。
 
 ---
 
-## Accessor Macros For Opaque (Data Type) Pixels
+## バイトアラインメントとビット深度
 
-Use the following macros to access the data within (opaque) PF_PixelPtrs.
+`PF_EffectWorld` の画素先頭は 16 バイト境界に揃っているとは限りません。  
+大きなバッファの部分領域が渡される場合があるため、SIMD 最適化コードでは前提を固定しないでください。
 
-It is, emphatically, *not* safe to simply cast pointers of one type into another! To make it work at all requires a cast, and there's nothing that prevents you from casting it incorrectly. We may change its implementation at a later date (at which time you'll thank us for forcing this level of abstraction).
+After Effects は 8 bpc に加えて 16 bpc、32 bpc（float）をサポートします。
+
+入力と出力で異なるビット深度が同時に渡されることはなく、プラグインが宣言していない深度が渡されることもありません。
+
+---
+
+## Opaque Pixel 用アクセサマクロ
+
+`PF_PixelPtr` から実画素型へアクセスする際は、次のマクロを使います。
+
+ポインタの生キャストは安全ではありません。将来実装変更の可能性もあるため、抽象化されたアクセサ経由で取得してください。
 
 ---
 
 ## PF_PixelPtr Accessor Macros
 
-| Macro | Purpose |
+| マクロ | 用途 |
 | --- | --- |
-| `PF_GET_PIXEL_DATA16` | Obtain a pointer to a 16-bpc pixel within the specified world.<br /><br />The returned pixel pointer will be NULL if the world is not 16-bpc.<br /><br />The second parameter is optional; if it is not NULL, the returned pixel will be an interpretation of the values in the passed-in pixel, as if it were in the specified PF_EffectWorld.<br /><br /><pre lang="cpp">PF_GET_PIXEL_DATA16 (<br/>  PF_EffectWorld wP,<br/>  PF_PixelPtr    pP0,<br/>  PF_Pixel16     \*outPP);</pre> |
-| `PF_GET_PIXEL_DATA8` | Obtain a pointer to a 8-bpc pixel within the specified world.<br /><br />The returned pixel pointer will be NULL if the world is not 8- bpc.<br /><br />The second parameter is optional; if it is not NULL, the returned pixel will be an interpretation of the values in the passed-in pixel, as if it were in the specified PF_EffectWorld.<br /><br /><pre lang="cpp">PF_GET_PIXEL_DATA8 (<br/>  PF_EffectWorld wP,<br/>  PF_PixelPtr    pP0,<br/>  PF_Pixel8      \*outPP);</pre> |
+| `PF_GET_PIXEL_DATA16` | 指定ワールドから 16 bpc 画素ポインタを取得します。対象が 16 bpc でなければ `NULL` が返ります。 |
+| `PF_GET_PIXEL_DATA8` | 指定ワールドから 8 bpc 画素ポインタを取得します。対象が 8 bpc でなければ `NULL` が返ります。 |
 
-`PF_GET_PIXEL_DATA16` と `PF_GET_PIXEL_DATA8` は安全な (まあ) キャスト ルーチンと考えてください。
+`PF_GET_PIXEL_DATA16` / `PF_GET_PIXEL_DATA8` は、安全に画素型へアクセスするための API と考えてください。
 
-必要なコードは実際には、PF_EffectWorld 出力から `PF_Pixel16*` を取得するために非常に簡単です。
+例:
 
 ```cpp
 {
@@ -75,6 +78,8 @@ It is, emphatically, *not* safe to simply cast pointers of one type into another
     err = PF_GET_PIXEL_DATA16(output, NULL, &deep_pixelP);
 }
 ```
-世界にディープ ピクセルがない場合、これは deep_pixelP を NULL として返します。
 
-2 番目のパラメータはあまり使用されないため、NULL として渡す必要があります。 PF_EffectWorld に「含まれていない」 PF_PixelPtr を渡して、その PF_EffectWorld の深さに強制します)。
+16 bpc でない場合、`deep_pixelP` は `NULL` になります。
+
+第 2 引数は通常 `NULL` を渡します。  
+特別な用途として、別ポインタを渡して「指定ワールド深度として解釈した値」を取得することもできます。

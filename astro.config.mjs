@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, passthroughImageService } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { STARLIGHT_SIDEBAR } from './docs-structure.mjs';
 
@@ -8,6 +8,9 @@ export default defineConfig({
 	output: 'static',
 	site: 'https://aeddjp.poti.studio',
 	compressHTML: true,
+	image: {
+		service: passthroughImageService(),
+	},
 	prefetch: {
 		prefetchAll: true,
 		defaultStrategy: 'load',

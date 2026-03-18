@@ -43,7 +43,7 @@ export default defineConfig({
 				{
 					icon: 'github',
 					label: 'GitHub',
-					href: 'https://github.com/docsforadobe/after-effects-plugin-guide',
+					href: 'https://github.com/potistudio/after-effects-dev-guide-jp',
 				},
 			],
 			components: {

@@ -54,13 +54,13 @@ After Effects は、フラット データまたは非フラット データの�
 両方の構造内の共通のオフセットにあるフラグを使用して、データの状態を示します。
 
 ```cpp
-typedef struct {
+typedef struct \{
     A_char*    messageZ;
     PF_FpLong  big_numF;
     void*      temp_storage;
 } non_flat_data;
 
-typedef struct {
+typedef struct \{
     char       message[256];
     PF_FpLong  big_numF;
     A_Boolean  big_endianB;
@@ -106,7 +106,7 @@ static PF_Err Render(
     PF_OutData  *out_dataP,
     PF_ParamDef *params[],
     PF_LayerDef *output )
-{
+\{
     PF_ConstHandle seq_handle;
 
     AEFX_SuiteScoper<PF_EffectSequenceDataSuite1> seqdata_suite =

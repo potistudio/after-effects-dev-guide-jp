@@ -25,11 +25,11 @@ Windows on Arm サポートの追加の詳細については、[https://learn.mi
 2. After Effects に Windows on Arm ビルドのメイン エントリポイントを伝えます。
 
     > * プラグインの .r リソース ファイルを見つけます。
-    > * 既存の Windows on Intel エントリポイント定義の横に `CodeWinARM64 {"EffectMain"}` を追加します。
+    > * 既存の Windows on Intel エントリポイント定義の横に `CodeWinARM64 \{"EffectMain"}` を追加します。
     >「cpp」
     > #定義されている場合(AE_OS_WIN)
-    > CodeWinARM64 {"EffectMain"},
-    > CodeWin64X86 {"EffectMain"},
+    > CodeWinARM64 \{"EffectMain"},
+    > CodeWin64X86 \{"EffectMain"},
     > #endif
     >「」
     > * 何らかの理由で Intel と Arm に異なるエントリポイントが必要な場合は、別のエントリポイント名と文字列を指定するだけです。

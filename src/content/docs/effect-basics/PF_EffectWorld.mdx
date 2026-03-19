@@ -23,14 +23,14 @@ After Effects は、画像バッファを `PF_EffectWorld`（別名 `PF_LayerDef
 
 ## 16.0 以降（GPU Smart Render）
 
-`PF_Cmd_SMART_RENDER_GPU` では、`PF_LayerDef` は CPU レンダー時と同様に埋まります。  
+`PF_Cmd_SMART_RENDER_GPU` では、`PF_LayerDef` は CPU レンダー時と同様に埋まります。
 ただし `PF_LayerDef.data` は `NULL` で、他フィールドのみ有効です。
 
 ---
 
 ## `rowbytes` の注意点
 
-次の走査線へ進む際に `width * sizeof(pixel)` で計算してはいけません。  
+次の走査線へ進む際に `width * sizeof(pixel)` で計算してはいけません。
 必ず `rowbytes` を使って行オフセットを求めてください。
 
 `PF_EffectWorld` の有効領域外へ書き込むと、他バッファやキャッシュ破壊につながります。
@@ -43,7 +43,7 @@ After Effects は、画像バッファを `PF_EffectWorld`（別名 `PF_LayerDef
 
 ## バイトアラインメントとビット深度
 
-`PF_EffectWorld` の画素先頭は 16 バイト境界に揃っているとは限りません。  
+`PF_EffectWorld` の画素先頭は 16 バイト境界に揃っているとは限りません。
 大きなバッファの部分領域が渡される場合があるため、SIMD 最適化コードでは前提を固定しないでください。
 
 After Effects は 8 bpc に加えて 16 bpc、32 bpc（float）をサポートします。
@@ -72,7 +72,7 @@ After Effects は 8 bpc に加えて 16 bpc、32 bpc（float）をサポート�
 例:
 
 ```cpp
-{
+\{
     PF_Pixel16 *deep_pixelP = NULL;
     PF_Err     err = PF_Err_NONE;
     err = PF_GET_PIXEL_DATA16(output, NULL, &deep_pixelP);
@@ -81,5 +81,5 @@ After Effects は 8 bpc に加えて 16 bpc、32 bpc（float）をサポート�
 
 16 bpc でない場合、`deep_pixelP` は `NULL` になります。
 
-第 2 引数は通常 `NULL` を渡します。  
+第 2 引数は通常 `NULL` を渡します。
 特別な用途として、別ポインタを渡して「指定ワールド深度として解釈した値」を取得することもできます。

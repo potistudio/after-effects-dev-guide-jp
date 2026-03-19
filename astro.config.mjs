@@ -9,7 +9,7 @@ import mdx from '@astrojs/mdx';
 // https://astro.build/config
 export default defineConfig({
 	output: 'static',
-	site: 'https://aeddjp.poti.studio',
+	site: 'https://aedevdocjp.poti.studio',
 	compressHTML: true,
 	image: {
 		service: passthroughImageService(),
@@ -23,8 +23,8 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
-			title: 'After Effects C++ SDK ガイド（日本語）',
-			favicon: '/favicon.ico',
+			title: "After Effects C++ SDKガイド 非公式日本語訳",
+			favicon: "favicon.ico",
 			head: [
 				{
 					tag: 'link',
@@ -55,6 +55,7 @@ export default defineConfig({
 			sidebar: STARLIGHT_SIDEBAR,
 		}),
 		mdx({
+			extendMarkdownConfig: true,
 			rehypePlugins: [rehypeAutolinkTerms],
 		})
 	],

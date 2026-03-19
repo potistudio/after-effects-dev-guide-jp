@@ -27,11 +27,11 @@ Mac Universal バイナリをビルドするには、Xcode 12.2 以降が必要�
 2. After Effects に Apple Silicon ビルドの主なエントリポイントを伝えます。
 
     > * プラグインの .r リソース ファイルを見つけます。
-    > * 既存の Intel Mac エントリポイント定義の横に `CodeMacARM64 {"EffectMain"}` を追加します。
+    > * 既存の Intel Mac エントリポイント定義の横に `CodeMacARM64 \{"EffectMain"}` を追加します。
     >「cpp」
     > #定義されている場合(AE_OS_MAC)
-    > CodeMacARM64 {"EffectMain"},
-    > CodeMacIntel64 {"EffectMain"},
+    > CodeMacARM64 \{"EffectMain"},
+    > CodeMacIntel64 \{"EffectMain"},
     > #endif
     >「」
     > * 何らかの理由で、x64 と ARM で異なるエントリポイントが必要な場合は、異なるエントリポイント名と文字列を指定するだけです。
@@ -56,13 +56,13 @@ PF_Err EffectMain ( PF_Cmd cmd,
     PF_OutData *out_data,
     PF_ParamDef *params[],
     PF_LayerDef *output )
-{
+\{
     try
-    {
+    \{
         /* Your code here */
     }
     catch
-    {
+    \{
         /* return most appropriate PF_Err */
     }
 }

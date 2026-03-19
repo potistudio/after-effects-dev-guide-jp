@@ -217,11 +217,11 @@ e
 // Example of a non Thread-Safe code
 static int should_just_be_local;
 
-void UseState() {
+void UseState() \{
     DoComputation(should_just_be_local);
 }
 
-void SetAndUseState() {
+void SetAndUseState() \{
     should_just_be_local = DoComputation();
     UseState();
 }
@@ -231,11 +231,11 @@ void SetAndUseState() {
 ```cpp
 // We can fix the above code by passing the should_just_be_local variable through function arguments
 
-void UseState(int should_just_be_local) {
+void UseState(int should_just_be_local) \{
     DoComputation(should_just_be_local);
 }
 
-void SetAndUseState() {
+void SetAndUseState() \{
     int should_just_be_local = DoComputation();
     UseState(should_just_be_local);
 }
@@ -249,15 +249,15 @@ void SetAndUseState() {
 static int state_with_initializer[64];
 static bool state_was_initialized = false;
 
-void InitializeState() {
-    for (int i = 0; i < 64; ++i) {
+void InitializeState() \{
+    for (int i = 0; i < 64; ++i) \{
         state_with_initializer[i] = i * i;
     }
     state_was_initialized = true;
 }
 
-void Main() {
-    if (!state_was_initialized) {
+void Main() \{
+    if (!state_was_initialized) \{
         InitializeState();
     }
     DoComputation(state_with_initializer);
@@ -266,10 +266,10 @@ void Main() {
 `const` にするか、マクロに置き換えます。
 
 ```cpp
-std::array<int, 64> InitializeState() {
+std::array<int, 64> InitializeState() \{
     std::array<int, 64> temp;
 
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 64; ++i) \{
         temp[i] = i * i;
     }
     return temp;
@@ -278,7 +278,7 @@ std::array<int, 64> InitializeState() {
 // We can fix the above code by making this table a const and initialize it before using it
 static const std::array<int, 64> state_with_initializer = InitializeState();
 
-void Main() {
+void Main() \{
     DoComputation(state_with_initializer);
 }
 ```
@@ -288,11 +288,11 @@ void Main() {
 // Example of a non Thread-Safe code
 static int depends_on_unchanging_runtime_state;
 
-void UseState() {
+void UseState() \{
     DoComputation(depends_on_unchanging_runtime_state);
 }
 
-void SetAndUseState() {
+void SetAndUseState() \{
     depends_on_unchanging_runtime_state = DoComputationThatNeedsStateOnlyOnce();
     UseState();
 }
@@ -300,11 +300,11 @@ void SetAndUseState() {
 コードを実行する前に、この状態が不明であることを再確認してください (ケース 2)。ただし、実行時に初期化する必要がある場合は、const static local を使用してください。 (静的ローカル オブジェクトのスレッドセーフな初期化は C++ 仕様の一部であることに注意してください)。
 
 ```cpp
-void UseState(int depends_on_unchanging_runtime_state) {
+void UseState(int depends_on_unchanging_runtime_state) \{
     DoComputation(depends_on_unchanging_runtime_state);
 }
 
-void SetAndUseState() {
+void SetAndUseState() \{
     // We can fix the above code by making the variable a const static local
     static const int depends_on_unchanging_runtime_state = DoComputationThatNeedsStateOnlyOnce();
 
@@ -317,11 +317,11 @@ void SetAndUseState() {
 // This variable has to be static and not a const
 static int this_thread_needs_access;
 
-void SetState(int new_state) {
+void SetState(int new_state) \{
     this_thread_needs_access = new_state;
 }
 
-void UseState() {
+void UseState() \{
     DoComputation(this_thread_needs_access);
 }
 ```
@@ -331,11 +331,11 @@ void UseState() {
 // Make this variable a thread_local variable
 thread_local static int this_thread_needs_access;
 
-void SetState(int new_state) {
+void SetState(int new_state) \{
     this_thread_needs_access = new_state;
 }
 
-void UseState() {
+void UseState() \{
     DoComputation(this_thread_needs_access);
 }
 ```
@@ -346,11 +346,11 @@ void UseState() {
 // It also needs to be shared across several threads
 static int every_thread_needs_latest_state;
 
-void SetState(int new_state) {
+void SetState(int new_state) \{
     every_thread_needs_latest_state = new_state;
 }
 
-void UseState() {
+void UseState() \{
     DoComputation(every_thread_needs_latest_state);
 }
 ```
@@ -362,17 +362,17 @@ static std::mutex ex_lock;
 
 static int every_thread_needs_latest_state;
 
-void SetState(int new_state) {
-    {
+void SetState(int new_state) \{
+    \{
         // Protect the access with the mutex (lock)
         std::lock_guard<std::mutex> lock(ex_lock);
         every_thread_needs_latest_state = new_state;
     }
 }
 
-void UseState() {
+void UseState() \{
     int state_capture;
-    {
+    \{
         // Protect the access with the mutex (lock)
         std::lock_guard<std::mutex> lock(ex_lock);
         state_capture = every_thread_needs_latest_state;

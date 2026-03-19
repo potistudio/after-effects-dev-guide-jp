@@ -38,13 +38,13 @@ After Effects の反復関数は本質的にこの機能を提供します。ピ
 場合によっては、すべてのピクセルを処理するのではなく、入力フレーム内の特定のオフセットに到達したい場合があります。以下は、特定の (x,y) 位置でピクセルをサンプリングする 1 つの方法です。同様のコードを使用して、指定された場所に書き込むことができます。
 
 ```cpp
-PF_Pixel *sampleIntegral32(PF_EffectWorld &def, int x, int y){
+PF_Pixel *sampleIntegral32(PF_EffectWorld &def, int x, int y)\{
     return (PF_Pixel*)((char*)def.data +
         (y * def.rowbytes) +
         (x * sizeof(PF_Pixel)));
 }
 
-PF_Pixel16 *sampleIntegral64(PF_EffectWorld &def, int x, int y){
+PF_Pixel16 *sampleIntegral64(PF_EffectWorld &def, int x, int y)\{
     assert(PF_WORLD_IS_DEEP(&def));
     return (PF_Pixel16*)((char*)def.data +
         (y * def.rowbytes) +
@@ -89,7 +89,7 @@ src_rect.bottom = src_rect.top + input>height;
 
 err = PF_FILL(NULL, NULL, output);
 
-if (!err) {
+if (!err) \{
     err = PF_COPY(&params[0]>u.ld, output, NULL, &src_rect);
 }
 ```

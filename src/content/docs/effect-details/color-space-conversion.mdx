@@ -9,9 +9,9 @@ title: '色空間変換'
 
 |                          ピクセルの種類 |                                                  データ構造 |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 8bpc ARGB | <pre lang="cpp">typedef struct {<br/> A_u_char alpha、red、green、blue;<br/>} PF_Pixel8;</pre> |
-| 16 bpc ARGB | <pre lang="cpp">typedef struct {<br/> A_u_short アルファ、赤、緑、青;<br/>} PF_Pixel16;</pre> |
-| 32 bpc ARGB | <pre lang="cpp">typedef struct {<br/> PF_FpShort アルファ、赤、緑、青;<br/>} PF_PixelFloat, PF_Pixel32;</pre> |
+| 8bpc ARGB | <pre lang="cpp">typedef struct \{<br/> A_u_char alpha、red、green、blue;<br/>} PF_Pixel8;</pre> |
+| 16 bpc ARGB | <pre lang="cpp">typedef struct \{<br/> A_u_short アルファ、赤、緑、青;<br/>} PF_Pixel16;</pre> |
+| 32 bpc ARGB | <pre lang="cpp">typedef struct \{<br/> PF_FpShort アルファ、赤、緑、青;<br/>} PF_PixelFloat, PF_Pixel32;</pre> |
 | HLS (色相、明度、彩度) | <pre lang="cpp">typedef PF_Fixed PF_HLS_PIXEL[3]</pre> |
 | YIQ (輝度、同相クロミナンス、直交クロミナンス) | <pre lang="cpp">typedef PF_Fixed PF_YIQ_PIXEL[3]</pre> |
 

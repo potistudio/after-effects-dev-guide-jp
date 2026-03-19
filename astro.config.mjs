@@ -2,6 +2,9 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { STARLIGHT_SIDEBAR } from './docs-structure.mjs';
+import { rehypeAutolinkTerms } from './plugins/rehype-autolink-terms.mjs';
+
+import mdx from '@astrojs/mdx';
 
 // https://astro.build/config
 export default defineConfig({
@@ -51,5 +54,8 @@ export default defineConfig({
 			},
 			sidebar: STARLIGHT_SIDEBAR,
 		}),
+		mdx({
+			rehypePlugins: [rehypeAutolinkTerms],
+		})
 	],
 });

@@ -16,6 +16,7 @@
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^12.6.12",
+		"@astrojs/mdx": "^5.0.2",
 		"@astrojs/starlight": "^0.37.6",
 		"astro": "^5.6.1",
 		"budoux": "^0.7.0",
